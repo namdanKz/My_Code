@@ -1,0 +1,6 @@
+a = input("Test Hey")
+print(a)
+a = input("Test Hey")
+print(a)
+a = input("Test Hey")
+print(a)
