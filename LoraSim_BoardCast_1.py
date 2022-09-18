@@ -398,7 +398,7 @@ class myPacket():
             if (minairtime == 9999):
                 print ("does not reach base station")
                 exit(-1)
-
+        
         # transmission range, needs update XXX
         self.transRange = 150
         self.pl = plen
