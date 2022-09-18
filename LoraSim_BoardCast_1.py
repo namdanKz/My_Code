@@ -305,6 +305,11 @@ class myNode():
                 found = 1
 
 
+        # namdanKz 
+        # move this part 
+        # create dist when all node already create
+        # create packet after that
+
         # create "virtual" packet for each BS
         global nrBS
         for i in range(0,nrBS):
@@ -439,19 +444,27 @@ def transmit(env,node):
         global packetSeq
         packetSeq = packetSeq + 1
 
+
+        # namdanKz 
+        # change from 0 to nrBs to all node in system
+
+
         global nrBS
         for bs in range(0, nrBS):
            if (node in packetsAtBS[bs]):
                 print ("ERROR: packet already in")
            else:
                 # adding packet if no collision
-                if (checkcollision(node.packet[bs])==1):
+                if (checkcollision(node.packet[bs])==1): 
                     node.packet[bs].collided = 1
                 else:
                     node.packet[bs].collided = 0
                 packetsAtBS[bs].append(node)
                 node.packet[bs].addTime = env.now
                 node.packet[bs].seqNr = packetSeq
+
+        # namdanKz Why??? I'm still don't understand this part
+        # why we should use packet 0 rectime?
 
         # take first packet rectime
         yield env.timeout(node.packet[0].rectime)

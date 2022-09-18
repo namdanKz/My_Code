@@ -281,7 +281,6 @@ class myBS():
 class myNode():
     def __init__(self, id, period, packetlen):
         #global bs
-
         self.id = id
         self.period = period
         self.x = 0
@@ -291,7 +290,7 @@ class myNode():
         #added prop
         self.packetlen = packetlen
         self.can_send = False
-
+        
         # this is very complex prodecure for placing nodes
         # and ensure minimum distance between each pair of nodes
         found = 0
