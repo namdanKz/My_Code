@@ -94,8 +94,9 @@ def checkcollision(packet):
     # lost packets don't collide
     if packet.lost:
        return 0
-    if packetsAtBS[packet.bs]:
-        for other in packetsAtBS[packet.bs]:
+    #if packetsAtBS[packet.bs]:
+    if packetsAtNode[packet.bs]:
+        for other in packetsAtNode[packet.bs]:
             if other.id != packet.nodeid:
                # simple collision
                if frequencyCollision(packet, other.packet[packet.bs]) \
@@ -190,7 +191,7 @@ def airtime(sf,cr,pl,bw):
     Tpream = (Npream + 4.25)*Tsym
     payloadSymbNB = 8 + max(math.ceil((8.0*pl-4.0*sf+28+16-20*H)/(4.0*(sf-2*DE)))*(cr+4),0)
     Tpayload = payloadSymbNB * Tsym
-    return Tpream + Tpayload
+    return Tpream + Tpayload 
 
 
 
@@ -305,10 +306,10 @@ class myNode():
                 found = 1
 
 
-        # namdanKz 
-        # move this part 
-        # create dist when all node already create
-        # create packet after that
+        # * namdanKz 
+        # ! move this part 
+        # ! create dist when all node already create
+        # ! create packet after that
 
         # create "virtual" packet for each BS
         global nrBS
@@ -424,7 +425,7 @@ class myPacket():
         if experiment != 3:
             global minsensi
             self.lost = self.rssi < minsensi
-            print ("node {} bs {} lost {}").format(self.nodeid, self.bs, self.lost)
+            print("node {} bs {} lost {}".format(self.nodeid, self.bs, self.lost))
 
 
 #
@@ -445,13 +446,14 @@ def transmit(env,node):
         packetSeq = packetSeq + 1
 
 
-        # namdanKz 
-        # change from 0 to nrBs to all node in system
-
+        # * namdanKz 
+        # * change from 0 to nrBs to all node in system
+        # ! Excep itself
 
         global nrBS
         for bs in range(0, nrBS):
-           if (node in packetsAtBS[bs]):
+           # *if (node in packetsAtBS[bs]):
+           if (node in packetsAtNode[bs]):
                 print ("ERROR: packet already in")
            else:
                 # adding packet if no collision
@@ -459,13 +461,15 @@ def transmit(env,node):
                     node.packet[bs].collided = 1
                 else:
                     node.packet[bs].collided = 0
-                packetsAtBS[bs].append(node)
+                packetsAtNode[bs].append(node)
                 node.packet[bs].addTime = env.now
                 node.packet[bs].seqNr = packetSeq
 
-        # namdanKz Why??? I'm still don't understand this part
-        # why we should use packet 0 rectime?
-
+        # ? namdanKz Why??? I'm still don't understand this part
+        # ? why we should use packet 0 rectime?
+        # ? May be because all packet use same time
+        
+        
         # take first packet rectime
         yield env.timeout(node.packet[0].rectime)
 
@@ -489,8 +493,9 @@ def transmit(env,node):
         # complete packet has been received by base station
         # can remove it
         for bs in range(0, nrBS):
-            if (node in packetsAtBS[bs]):
-                packetsAtBS[bs].remove(node)
+            # *if (node in packetsAtBS[bs]):
+            if (node in packetsAtNode[bs]):
+                packetsAtNode[bs].remove(node)
                 # reset the packet
                 node.packet[bs].collided = 0
                 node.packet[bs].processed = 0
@@ -528,6 +533,10 @@ nodes = []
 packetsAtBS = []
 env = simpy.Environment()
 
+# * new
+packetsAtNode = []
+nrAllNode = nrBS + nrNodes
+
 
 # max distance: 300m in city, 3000 m outside (5 km Utz experiment)
 # also more unit-disc like according to Utz
@@ -552,7 +561,7 @@ GL = 0
 
 sensi = np.array([sf7,sf8,sf9,sf10,sf11,sf12])
 
-## figure out the minimal sensitivity for the given experiment
+# figure out the minimal sensitivity for the given experiment
 minsensi = -200.0
 if experiment in [0,1,4]:
     minsensi = sensi[5,2]  # 5th row is SF12, 2nd column is BW125
@@ -574,8 +583,6 @@ ymax = bsy + maxDist + 20
 
 # maximum number of packets the BS can receive at the same time
 maxBSReceives = 8
-
-
 
 maxX = 2 * maxDist * math.sin(60*(math.pi/180)) # == sqrt(3) * maxDist
 print("maxX ", maxX)
@@ -603,11 +610,26 @@ for i in range(0,nrBS):
     packetsAtBS.append([])
     packetsRecBS.append([])
 
-for i in range(0,nrNodes):
+# * Copy
+packetsAtNode = []
+packetsRecNode = []
+
+
+# * Gateway
+gateway = myNode(0,avgSendTime,20)
+gateway.x = maxX/2.0
+gateway.y = maxY/2.0
+nodes.append(gateway)
+env.process(transmit(env,gateway))
+packetsAtNode.append([])
+
+# * node id is next to base station
+for i in range(nrBS,nrNodes+nrBS):
     # myNode takes period (in ms), base station id packetlen (in Bytes)
     # 1000000 = 16 min
     node = myNode(i, avgSendTime,20)
     nodes.append(node)
+    packetsAtNode.append([])
     env.process(transmit(env,node))
 
 #prepare show
