@@ -50,6 +50,7 @@
     data file can be easily plotted using e.g. gnuplot.
 """
 
+from tokenize import Double
 import simpy
 import random
 import numpy as np
@@ -270,7 +271,17 @@ class myBS():
 class myNode():
     def __init__(self, id, period, packetlen):
         global bs
-
+        # ! add for create packet
+        self.packetlen = packetlen
+        self.cansend = False # ! initial is can't send 
+        # ! neighbor
+        self.neighbor_same = []
+        self.neighbor_upper = []
+        self.neighbor_lower = []
+        
+        # ! inital layer = 0
+        self.SFlevel = 0
+        
         self.id = id
         self.period = period
         self.x = 0
@@ -311,13 +322,14 @@ class myNode():
         # ! create dist when all node already create
         # ! create packet after that
 
+        # ! Moved
         # create "virtual" packet for each BS
-        global nrBS
-        for i in range(0,nrBS):
-            d = np.sqrt((self.x-bs[i].x)*(self.x-bs[i].x)+(self.y-bs[i].y)*(self.y-bs[i].y))
-            self.dist.append(d)
-            self.packet.append(myPacket(self.id, packetlen, self.dist[i], i))
-        print('node %d' %id, "x", self.x, "y", self.y, "dist: ", self.dist)
+        # global nrBS
+        # for i in range(0,nrBS):
+        #     d = np.sqrt((self.x-bs[i].x)*(self.x-bs[i].x)+(self.y-bs[i].y)*(self.y-bs[i].y))
+        #     self.dist.append(d)
+        #     self.packet.append(myPacket(self.id, packetlen, self.dist[i], i))
+        # print('node %d' %id, "x", self.x, "y", self.y, "dist: ", self.dist)
 
         self.sent = 0
 
@@ -340,7 +352,6 @@ class myPacket():
         global var
         global Lpld0
         global GL
-
 
         # new: base station ID
         self.bs = bs
@@ -435,6 +446,11 @@ class myPacket():
 #
 def transmit(env,node):
     while True:
+        
+        if not node.cansend:
+            yield env.timeout(1)
+            continue
+        
         yield env.timeout(random.expovariate(1.0/float(node.period)))
 
         # time sending and receiving
@@ -451,8 +467,10 @@ def transmit(env,node):
         # ! Excep itself
 
         global nrBS
-        for bs in range(0, nrBS):
+        for bs in range(0, nrAllNode):
            # *if (node in packetsAtBS[bs]):
+           if bs == node.id: # ! it self no packet 
+               continue
            if (node in packetsAtNode[bs]):
                 print ("ERROR: packet already in")
            else:
@@ -469,18 +487,23 @@ def transmit(env,node):
         # ? why we should use packet 0 rectime?
         # ? May be because all packet use same time
         
-        
         # take first packet rectime
-        yield env.timeout(node.packet[0].rectime)
-
+        if node.id == 0: #node 0 ไม่มี packet ที่ 0
+            yield env.timeout(node.packet[1].rectime)
+        else:
+            yield env.timeout(node.packet[0].rectime)
+            
         # if packet did not collide, add it in list of received packets
         # unless it is already in
-        for bs in range(0, nrBS):
+        for bs in range(0, nrAllNode):
+            if bs == node.id: # ! it self no packet 
+               continue
             if node.packet[bs].lost:
                 lostPackets.append(node.packet[bs].seqNr)
             else:
                 if node.packet[bs].collided == 0:
-                    packetsRecBS[bs].append(node.packet[bs].seqNr)
+                    #packetsRecBS[bs].append(node.packet[bs].seqNr)
+                    packetsRecNode[bs].append(node.packet[bs].seqNr)
                     if (recPackets):
                         if (recPackets[-1] != node.packet[bs].seqNr):
                             recPackets.append(node.packet[bs].seqNr)
@@ -492,10 +515,35 @@ def transmit(env,node):
 
         # complete packet has been received by base station
         # can remove it
-        for bs in range(0, nrBS):
+        for bs in range(0, nrAllNode): 
             # *if (node in packetsAtBS[bs]):
             if (node in packetsAtNode[bs]):
                 packetsAtNode[bs].remove(node)
+                # ! packet are recived || node send to nodes[bs] 
+                if not nodes[bs].cansend: # ! first recived
+                    nodes[bs].cansend = True
+                    nodes[bs].SFlevel = node.SFlevel+1
+                    node.neighbor_upper.append(nodes[bs])
+                    nodes[bs].neighbor_lower.append(node)
+                else:
+                    if node.SFlevel == nodes[bs].SFlevel:
+                        if not nodes[bs] in node.neighbor_same:
+                            node.neighbor_same.append(nodes[bs])
+                        if not node in nodes[bs].neighbor_same:
+                            nodes[bs].neighbor_same.append(node)
+                    elif node.SFlevel == nodes[bs].SFlevel-1:
+                        if not nodes[bs] in node.neighbor_upper:
+                            node.neighbor_upper.append(nodes[bs])
+                        if not node in nodes[bs].neighbor_lower:
+                            nodes[bs].neighbor_lower.append(node)
+                    elif node.SFlevel == nodes[bs].SFlevel+1:
+                        if not nodes[bs] in node.neighbor_lower:
+                            node.neighbor_lower.append(nodes[bs])
+                        if not node in nodes[bs].neighbor_upper:
+                            nodes[bs].neighbor_upper.append(node)
+                    elif node.SFlevel > nodes[bs].SFlevel+1:
+                        {}
+                            
                 # reset the packet
                 node.packet[bs].collided = 0
                 node.packet[bs].processed = 0
@@ -575,6 +623,8 @@ print ("amin", minsensi, "Lpl", Lpl)
 maxDist = d0*(math.e**((Lpl-Lpld0)/(10.0*gamma)))
 print ("maxDist:", maxDist)
 
+nodes:list[myNode]
+
 # base station placement
 bsx = maxDist+10
 bsy = maxDist+10
@@ -615,13 +665,16 @@ packetsAtNode = []
 packetsRecNode = []
 
 
+
 # * Gateway
 gateway = myNode(0,avgSendTime,20)
 gateway.x = maxX/2.0
 gateway.y = maxY/2.0
+gateway.cansend = True
 nodes.append(gateway)
 env.process(transmit(env,gateway))
 packetsAtNode.append([])
+packetsRecNode.append([])
 
 # * node id is next to base station
 for i in range(nrBS,nrNodes+nrBS):
@@ -630,8 +683,37 @@ for i in range(nrBS,nrNodes+nrBS):
     node = myNode(i, avgSendTime,20)
     nodes.append(node)
     packetsAtNode.append([])
+    packetsRecNode.append([])
     env.process(transmit(env,node))
 
+
+# * Create distance matrix and add packet to node
+cols = nrAllNode
+rows = nrAllNode
+dist_mat =[[0 for i in range(cols)] for j in range(rows)]
+for i in range(0,nrAllNode):
+    for j in range(i+1,nrAllNode):
+        dist_node = np.sqrt((nodes[i].x-nodes[j].x)*(nodes[i].x-nodes[j].x)+(nodes[i].y-nodes[j].y)*(nodes[i].y-nodes[j].y))
+        dist_mat[i][j] = dist_node
+        print(f"Dist Node = {dist_node} i = {i} j = {j}")
+print("***** distatance matrix *****")
+print(dist_mat)    
+    
+# *add package to node
+
+for i in range(0,nrAllNode):
+    for j in range(0,nrAllNode):
+        if i < j:
+            node_dist = dist_mat[i][j]
+        elif i == j:
+            nodes[i].packet.append([])
+            continue
+        else:
+            node_dist = dist_mat[j][i]
+        nodes[i].packet.append(myPacket(nodes[i].id, nodes[i].packetlen, node_dist, j))
+
+
+    
 #prepare show
 if (graphics == 1):
     plt.xlim([0, xmax])
