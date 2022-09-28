@@ -531,17 +531,18 @@ def transmit(env,node):
                             node.neighbor_same.append(nodes[bs])
                         if not node in nodes[bs].neighbor_same:
                             nodes[bs].neighbor_same.append(node)
-                    elif node.SFlevel == nodes[bs].SFlevel-1:
+                    elif node.SFlevel <= nodes[bs].SFlevel-1:
+                        nodes[bs].SFlevel = node.SFlevel - 1
                         if not nodes[bs] in node.neighbor_upper:
                             node.neighbor_upper.append(nodes[bs])
                         if not node in nodes[bs].neighbor_lower:
                             nodes[bs].neighbor_lower.append(node)
-                    elif node.SFlevel == nodes[bs].SFlevel+1:
+                    elif node.SFlevel >= nodes[bs].SFlevel+1:
+                        node.SFlevel = nodes[bs].SFlevel+1
                         if not nodes[bs] in node.neighbor_lower:
                             node.neighbor_lower.append(nodes[bs])
                         if not node in nodes[bs].neighbor_upper:
                             nodes[bs].neighbor_upper.append(node)
-                    elif node.SFlevel > nodes[bs].SFlevel+1:
                         {}
                         # ! Test Comment
                             
