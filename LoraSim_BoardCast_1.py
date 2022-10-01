@@ -279,6 +279,12 @@ class myNode():
         self.neighbor_upper = []
         self.neighbor_lower = []
         
+        self.temp_same = []
+        self.temp_upper = []
+        self.temp_lower = []
+        
+        self.finished = False
+        
         # ! inital layer = 0
         self.SFlevel = 0
         
@@ -293,7 +299,7 @@ class myNode():
         found = 0
         rounds = 0
         global nodes
-        while (found == 0 and rounds < 100):
+        while (found == 0 and rounds < 1000):
             global maxX
             global maxY
             posx = random.randint(0,int(maxX))
@@ -307,7 +313,7 @@ class myNode():
                         self.y = posy
                     else:
                         rounds = rounds + 1
-                        if rounds == 100:
+                        if rounds == 1000:
                             print ("could not place new node, giving up")
                             exit(-2)
             else:
@@ -444,8 +450,9 @@ class myPacket():
 # a global list of packet being processed at the gateway
 # is maintained
 #
-def transmit(env,node):
-    while True:
+def transmit(env,node:myNode):
+    #while True:
+    while not node.finished:
         
         if not node.cansend:
             yield env.timeout(1)
@@ -483,9 +490,7 @@ def transmit(env,node):
                 node.packet[bs].addTime = env.now
                 node.packet[bs].seqNr = packetSeq
 
-        # ? namdanKz Why??? I'm still don't understand this part
-        # ? why we should use packet 0 rectime?
-        # ? May be because all packet use same time
+
         
         # take first packet rectime
         if node.id == 0: #node 0 ไม่มี packet ที่ 0
@@ -509,6 +514,43 @@ def transmit(env,node):
                             recPackets.append(node.packet[bs].seqNr)
                     else:
                         recPackets.append(node.packet[bs].seqNr)
+                    # ! packet are recived || node send to nodes[bs] 
+                    if not nodes[bs].cansend: # ! first recived
+                        nodes[bs].cansend = True
+                        nodes[bs].SFlevel = node.SFlevel+1
+                        node.neighbor_upper.append(nodes[bs])
+                        nodes[bs].neighbor_lower.append(node)
+                    else:
+                        # * Clear all node in list first
+
+                        if nodes[bs] in node.neighbor_lower:
+                            node.neighbor_lower.remove(nodes[bs])
+                        if nodes[bs] in node.neighbor_same:
+                            node.neighbor_same.remove(nodes[bs])
+                        if nodes[bs] in node.neighbor_upper:
+                            node.neighbor_upper.remove(nodes[bs])
+
+                        if node in nodes[bs].neighbor_lower:
+                            nodes[bs].neighbor_lower.remove(node)
+                        if node in nodes[bs].neighbor_same:
+                            nodes[bs].neighbor_same.remove(node)
+                        if node in nodes[bs].neighbor_upper:
+                            nodes[bs].neighbor_upper.remove(node)
+
+                        if node.SFlevel == nodes[bs].SFlevel:
+                            node.neighbor_same.append(nodes[bs])
+                            nodes[bs].neighbor_same.append(node)
+                        elif node.SFlevel < nodes[bs].SFlevel:
+                            node.neighbor_upper.append(nodes[bs])
+                            nodes[bs].neighbor_lower.append(node)
+                            nodes[bs].SFlevel = node.SFlevel+1
+                            if node.id != 0:
+                                print("Found")
+                        else:
+                            node.neighbor_lower.append(nodes[bs])
+                            nodes[bs].neighbor_upper.append(node)
+                            node.SFlevel = nodes[bs].SFlevel+1  
+                
                 else:
                     # XXX only for debugging
                     collidedPackets.append(node.packet[bs].seqNr)
@@ -519,36 +561,17 @@ def transmit(env,node):
             # *if (node in packetsAtBS[bs]):
             if (node in packetsAtNode[bs]):
                 packetsAtNode[bs].remove(node)
-                # ! packet are recived || node send to nodes[bs] 
-                if not nodes[bs].cansend: # ! first recived
-                    nodes[bs].cansend = True
-                    nodes[bs].SFlevel = node.SFlevel+1
-                    node.neighbor_upper.append(nodes[bs])
-                    nodes[bs].neighbor_lower.append(node)
-                else:
-                    if node.SFlevel == nodes[bs].SFlevel:
-                        if not nodes[bs] in node.neighbor_same:
-                            node.neighbor_same.append(nodes[bs])
-                        if not node in nodes[bs].neighbor_same:
-                            nodes[bs].neighbor_same.append(node)
-                    elif node.SFlevel <= nodes[bs].SFlevel-1:
-                        nodes[bs].SFlevel = node.SFlevel - 1
-                        if not nodes[bs] in node.neighbor_upper:
-                            node.neighbor_upper.append(nodes[bs])
-                        if not node in nodes[bs].neighbor_lower:
-                            nodes[bs].neighbor_lower.append(node)
-                    elif node.SFlevel >= nodes[bs].SFlevel+1:
-                        node.SFlevel = nodes[bs].SFlevel+1
-                        if not nodes[bs] in node.neighbor_lower:
-                            node.neighbor_lower.append(nodes[bs])
-                        if not node in nodes[bs].neighbor_upper:
-                            nodes[bs].neighbor_upper.append(node)
-                        {}
-                        # ! Test Comment
-                            
+               
                 # reset the packet
                 node.packet[bs].collided = 0
                 node.packet[bs].processed = 0
+                
+        if node.neighbor_lower != node.temp_lower or node.neighbor_same != node.temp_same or node.neighbor_upper != node.temp_upper:
+            node.temp_lower = node.neighbor_lower
+            node.temp_same = node.neighbor_same
+            node.temp_upper = node.neighbor_upper
+        else:
+            node.finished = True
 
 #
 # "main" program
@@ -623,6 +646,7 @@ elif experiment == 3:
 Lpl = Ptx - minsensi
 print ("amin", minsensi, "Lpl", Lpl)
 maxDist = d0*(math.e**((Lpl-Lpld0)/(10.0*gamma)))
+#maxDist = 100
 print ("maxDist:", maxDist)
 
 nodes:list[myNode]
@@ -687,7 +711,6 @@ for i in range(nrBS,nrNodes+nrBS):
     packetsAtNode.append([])
     packetsRecNode.append([])
     env.process(transmit(env,node))
-
 
 # * Create distance matrix and add packet to node
 cols = nrAllNode
