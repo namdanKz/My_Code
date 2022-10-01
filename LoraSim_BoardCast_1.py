@@ -50,7 +50,7 @@
     data file can be easily plotted using e.g. gnuplot.
 """
 
-from tokenize import Double
+
 import simpy
 import random
 import numpy as np
@@ -59,6 +59,19 @@ import sys
 import matplotlib.pyplot as plt
 import os
 from matplotlib.patches import Rectangle
+from datetime import datetime
+
+
+now = datetime.now()
+dt_string = now.strftime("%b%d_%H%M%S")
+
+#test save log
+fPacketLog = f"expLog{dt_string}.csv"
+fPacketNode = f"expNode{dt_string}.csv"
+#open(fPacketLog,'w').close()
+#open(fPacketNode,'w').close()
+NewLine = '\n'
+
 
 # turn on/off graphics
 graphics = 0
@@ -453,7 +466,6 @@ class myPacket():
 def transmit(env,node:myNode):
     #while True:
     while not node.finished:
-        
         if not node.cansend:
             yield env.timeout(1)
             continue
@@ -490,8 +502,6 @@ def transmit(env,node:myNode):
                 node.packet[bs].addTime = env.now
                 node.packet[bs].seqNr = packetSeq
 
-
-        
         # take first packet rectime
         if node.id == 0: #node 0 ไม่มี packet ที่ 0
             yield env.timeout(node.packet[1].rectime)
