@@ -61,16 +61,24 @@ import os
 from matplotlib.patches import Rectangle
 from datetime import datetime
 
-
 now = datetime.now()
 dt_string = now.strftime("%b%d_%H%M%S")
 
 #test save log
-fPacketLog = f"expLog{dt_string}.csv"
+fPacketPkg = f"expPkg{dt_string}.csv"
 fPacketNode = f"expNode{dt_string}.csv"
+#Text for header
+
+NodeSpace = "_"*6
+NodeHeader = f"Node-ID{NodeSpace} X{NodeSpace} Y{NodeSpace}\n"
+with open(fPacketPkg, "a") as myfile:
+    myfile.write(NodeHeader)
+myfile.close()
 #open(fPacketLog,'w').close()
 #open(fPacketNode,'w').close()
 NewLine = '\n'
+
+
 
 
 # turn on/off graphics
@@ -309,6 +317,8 @@ class myNode():
         self.dist = []
         # this is very complex prodecure for placing nodes
         # and ensure minimum distance between each pair of nodes
+        
+        self.packet:list[myPacket]
         found = 0
         rounds = 0
         global nodes
@@ -701,11 +711,19 @@ packetsAtNode = []
 packetsRecNode = []
 
 
+# ! ****** Log Method *******
+def LogTxt_Node(node:myNode):
+    textNode = f"Node ID ={node.id:>4} X ={node.x:>4} Y ={node.y:>4}\n"
+    with open(fPacketPkg, "a") as myfile:
+        myfile.write(textNode)
+    myfile.close()
 
 # * Gateway
 gateway = myNode(0,avgSendTime,20)
-gateway.x = maxX/2.0
-gateway.y = maxY/2.0
+gateway.x = int(maxX/2.0)
+gateway.y = int(maxY/2.0)
+
+LogTxt_Node(gateway)
 gateway.cansend = True
 nodes.append(gateway)
 env.process(transmit(env,gateway))
@@ -717,6 +735,7 @@ for i in range(nrBS,nrNodes+nrBS):
     # myNode takes period (in ms), base station id packetlen (in Bytes)
     # 1000000 = 16 min
     node = myNode(i, avgSendTime,20)
+    LogTxt_Node(node)
     nodes.append(node)
     packetsAtNode.append([])
     packetsRecNode.append([])
@@ -764,6 +783,9 @@ with open('nodes.txt', 'w') as nfile:
 with open('basestation.txt', 'w') as bfile:
     for basestation in bs:
         bfile.write('{x} {y} {id}\n'.format(**vars(basestation)))
+        
+        
+
 
 # start simulation
 env.run(until=simtime)
@@ -805,7 +827,7 @@ with open(fname, "a") as myfile:
     myfile.write(res)
 myfile.close()
 
-exit(-1)
+exit(0)
 #below not updated
 
 
