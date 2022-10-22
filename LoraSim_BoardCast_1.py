@@ -61,6 +61,9 @@ import os
 from matplotlib.patches import Rectangle
 from datetime import datetime
 
+import matplotlib.pyplot as plt
+
+
 now = datetime.now()
 dt_string = now.strftime("%b%d_%H%M%S")
 
@@ -71,9 +74,15 @@ fPacketNode = f"expNode{dt_string}.csv"
 
 NodeSpace = "_"*6
 NodeHeader = f"Node-ID{NodeSpace} X{NodeSpace} Y{NodeSpace}\n"
-with open(fPacketPkg, "a") as myfile:
+with open(fPacketNode, "a") as myfile:
     myfile.write(NodeHeader)
 myfile.close()
+
+PacketHeader = f"At{NodeSpace} Node-{NodeSpace} to Node-{NodeSpace}\n"
+with open(fPacketPkg, "a") as myfile:
+    myfile.write(PacketHeader)
+myfile.close()
+
 #open(fPacketLog,'w').close()
 #open(fPacketNode,'w').close()
 NewLine = '\n'
@@ -104,6 +113,192 @@ sf10 = np.array([10,-132.75,-130.25,-128.75])
 sf11 = np.array([11,-134.5,-132.75,-128.75])
 sf12 = np.array([12,-133.25,-132.25,-132.25])
 
+
+
+# ! Move class node and packet 
+
+#
+# this function creates a node
+#
+class myNode():
+    def __init__(self, id, period, packetlen):
+        global bs
+        # ! add for create packet
+        self.packetlen = packetlen
+        self.cansend = False # ! initial is can't send 
+        # ! neighbor
+        self.neighbor_same = []
+        self.neighbor_upper = []
+        self.neighbor_lower = []
+        
+        self.temp_same = []
+        self.temp_upper = []
+        self.temp_lower = []
+        
+        self.finished = False
+        
+        # ! inital layer = 0
+        self.SFlevel = 0
+        
+        self.id = id
+        self.period = period
+        self.x = 0
+        self.y = 0
+        self.packet = []
+        self.dist = []
+        # this is very complex prodecure for placing nodes
+        # and ensure minimum distance between each pair of nodes
+        
+        self.packet:list[myPacket]
+        found = 0
+        rounds = 0
+        global nodes
+        while (found == 0 and rounds < 1000):
+            #global maxX
+            #global maxY
+            posx = random.randint(0,int(maxDist))
+            posy = random.randint(0,int(maxDist))
+            if len(nodes) > 0:
+                for index, n in enumerate(nodes):
+                    dist = np.sqrt(((abs(n.x-posx))**2)+((abs(n.y-posy))**2))
+                    if dist >= 10:
+                        found = 1
+                        self.x = posx
+                        self.y = posy
+                    else:
+                        rounds = rounds + 1
+                        if rounds == 1000:
+                            print ("could not place new node, giving up")
+                            exit(-2)
+            else:
+                print ("first node")
+                self.x = posx
+                self.y = posy
+                found = 1
+
+
+        # * namdanKz 
+        # ! move this part 
+        # ! create dist when all node already create
+        # ! create packet after that
+
+        # ! Moved
+        # create "virtual" packet for each BS
+        # global nrBS
+        # for i in range(0,nrBS):
+        #     d = np.sqrt((self.x-bs[i].x)*(self.x-bs[i].x)+(self.y-bs[i].y)*(self.y-bs[i].y))
+        #     self.dist.append(d)
+        #     self.packet.append(myPacket(self.id, packetlen, self.dist[i], i))
+        # print('node %d' %id, "x", self.x, "y", self.y, "dist: ", self.dist)
+
+        self.sent = 0
+
+        # graphics for node
+        global graphics
+        if (graphics == 1):
+            global ax
+            ax.add_artist(plt.Circle((self.x, self.y), 2, fill=True, color='blue'))
+
+#
+# this function creates a packet (associated with a node)
+# it also sets all parameters, currently random
+#
+class myPacket():
+    def __init__(self, nodeid, plen, distance, bs):
+        global experiment
+        global Ptx
+        global gamma
+        global d0
+        global var
+        global Lpld0
+        global GL
+
+        # new: base station ID
+        self.bs = bs
+        self.nodeid = nodeid
+        # randomize configuration values
+        self.sf = random.randint(6,12)
+        self.cr = random.randint(1,4)
+        self.bw = random.choice([125, 250, 500])
+
+        # for certain experiments override these
+        if experiment==1 or experiment == 0:
+            self.sf = 12
+            self.cr = 4
+            self.bw = 125
+
+        # for certain experiments override these
+        if experiment==2:
+            self.sf = 6
+            self.cr = 1
+            self.bw = 500
+
+
+        # for experiment 3 find the best setting
+        # OBS, some hardcoded values
+        Prx = Ptx  ## zero path loss by default
+
+        # log-shadow
+        Lpl = Lpld0 + 10*gamma*math.log(distance/d0)
+        print (Lpl)
+        Prx = Ptx - GL - Lpl
+
+        if (experiment == 3):
+            minairtime = 9999
+            minsf = 0
+            minbw = 0
+
+            for i in range(0,6):
+                for j in range(1,4):
+                    if (sensi[i,j] < Prx):
+                        self.sf = sensi[i,0]
+                        if j==1:
+                            self.bw = 125
+                        elif j==2:
+                            self.bw = 250
+                        else:
+                            self.bw=500
+                        at = airtime(self.sf,4,20,self.bw)
+                        if at < minairtime:
+                            minairtime = at
+                            minsf = self.sf
+                            minbw = self.bw
+
+            self.rectime = minairtime
+            self.sf = minsf
+            self.bw = minbw
+            if (minairtime == 9999):
+                print ("does not reach base station")
+                exit(-1)
+        
+        # transmission range, needs update XXX
+        self.transRange = 150
+        self.pl = plen
+        self.symTime = (2.0**self.sf)/self.bw
+        self.arriveTime = 0
+        self.rssi = Prx
+        # frequencies: lower bound + number of 61 Hz steps
+        self.freq = 860000000 + random.randint(0,2622950)
+
+        # for certain experiments override these and
+        # choose some random frequences
+        if experiment == 1:
+            self.freq = random.choice([860000000, 864000000, 868000000])
+        else:
+            self.freq = 860000000
+        
+        self.rectime = airtime(self.sf,self.cr,self.pl,self.bw)
+        # denote if packet is collided
+        self.collided = 0
+        self.processed = 0
+        # mark the packet as lost when it's rssi is below the sensitivity
+        # don't do this for experiment 3, as it requires a bit more work
+        # ! note this in paper
+        if experiment != 3:
+            global minsensi
+            self.lost = self.rssi < minsensi
+            print("node {} bs {} lost {}".format(self.nodeid, self.bs, self.lost))
+
 #
 # check for collisions at base station
 # Note: called before a packet (or rather node) is inserted into the list
@@ -111,7 +306,7 @@ sf12 = np.array([12,-133.25,-132.25,-132.25])
 # conditions for collions:
 #     1. same sf
 #     2. frequency, see function below (Martins email, not implementet yet):
-def checkcollision(packet):
+def checkcollision(packet:myPacket):
     col = 0 # flag needed since there might be several collisions for packet
     # lost packets don't collide
     if packet.lost:
@@ -286,186 +481,7 @@ class myBS():
             ax.add_artist(plt.Circle((self.x, self.y), 3, fill=True, color='green'))
             ax.add_artist(plt.Circle((self.x, self.y), maxDist, fill=False, color='green'))
 
-#
-# this function creates a node
-#
-class myNode():
-    def __init__(self, id, period, packetlen):
-        global bs
-        # ! add for create packet
-        self.packetlen = packetlen
-        self.cansend = False # ! initial is can't send 
-        # ! neighbor
-        self.neighbor_same = []
-        self.neighbor_upper = []
-        self.neighbor_lower = []
-        
-        self.temp_same = []
-        self.temp_upper = []
-        self.temp_lower = []
-        
-        self.finished = False
-        
-        # ! inital layer = 0
-        self.SFlevel = 0
-        
-        self.id = id
-        self.period = period
-        self.x = 0
-        self.y = 0
-        self.packet = []
-        self.dist = []
-        # this is very complex prodecure for placing nodes
-        # and ensure minimum distance between each pair of nodes
-        
-        self.packet:list[myPacket]
-        found = 0
-        rounds = 0
-        global nodes
-        while (found == 0 and rounds < 1000):
-            global maxX
-            global maxY
-            posx = random.randint(0,int(maxX))
-            posy = random.randint(0,int(maxY))
-            if len(nodes) > 0:
-                for index, n in enumerate(nodes):
-                    dist = np.sqrt(((abs(n.x-posx))**2)+((abs(n.y-posy))**2))
-                    if dist >= 10:
-                        found = 1
-                        self.x = posx
-                        self.y = posy
-                    else:
-                        rounds = rounds + 1
-                        if rounds == 1000:
-                            print ("could not place new node, giving up")
-                            exit(-2)
-            else:
-                print ("first node")
-                self.x = posx
-                self.y = posy
-                found = 1
 
-
-        # * namdanKz 
-        # ! move this part 
-        # ! create dist when all node already create
-        # ! create packet after that
-
-        # ! Moved
-        # create "virtual" packet for each BS
-        # global nrBS
-        # for i in range(0,nrBS):
-        #     d = np.sqrt((self.x-bs[i].x)*(self.x-bs[i].x)+(self.y-bs[i].y)*(self.y-bs[i].y))
-        #     self.dist.append(d)
-        #     self.packet.append(myPacket(self.id, packetlen, self.dist[i], i))
-        # print('node %d' %id, "x", self.x, "y", self.y, "dist: ", self.dist)
-
-        self.sent = 0
-
-        # graphics for node
-        global graphics
-        if (graphics == 1):
-            global ax
-            ax.add_artist(plt.Circle((self.x, self.y), 2, fill=True, color='blue'))
-
-#
-# this function creates a packet (associated with a node)
-# it also sets all parameters, currently random
-#
-class myPacket():
-    def __init__(self, nodeid, plen, distance, bs):
-        global experiment
-        global Ptx
-        global gamma
-        global d0
-        global var
-        global Lpld0
-        global GL
-
-        # new: base station ID
-        self.bs = bs
-        self.nodeid = nodeid
-        # randomize configuration values
-        self.sf = random.randint(6,12)
-        self.cr = random.randint(1,4)
-        self.bw = random.choice([125, 250, 500])
-
-        # for certain experiments override these
-        if experiment==1 or experiment == 0:
-            self.sf = 12
-            self.cr = 4
-            self.bw = 125
-
-        # for certain experiments override these
-        if experiment==2:
-            self.sf = 6
-            self.cr = 1
-            self.bw = 500
-
-
-        # for experiment 3 find the best setting
-        # OBS, some hardcoded values
-        Prx = Ptx  ## zero path loss by default
-
-        # log-shadow
-        Lpl = Lpld0 + 10*gamma*math.log(distance/d0)
-        print (Lpl)
-        Prx = Ptx - GL - Lpl
-
-        if (experiment == 3):
-            minairtime = 9999
-            minsf = 0
-            minbw = 0
-
-            for i in range(0,6):
-                for j in range(1,4):
-                    if (sensi[i,j] < Prx):
-                        self.sf = sensi[i,0]
-                        if j==1:
-                            self.bw = 125
-                        elif j==2:
-                            self.bw = 250
-                        else:
-                            self.bw=500
-                        at = airtime(self.sf,4,20,self.bw)
-                        if at < minairtime:
-                            minairtime = at
-                            minsf = self.sf
-                            minbw = self.bw
-
-            self.rectime = minairtime
-            self.sf = minsf
-            self.bw = minbw
-            if (minairtime == 9999):
-                print ("does not reach base station")
-                exit(-1)
-        
-        # transmission range, needs update XXX
-        self.transRange = 150
-        self.pl = plen
-        self.symTime = (2.0**self.sf)/self.bw
-        self.arriveTime = 0
-        self.rssi = Prx
-        # frequencies: lower bound + number of 61 Hz steps
-        self.freq = 860000000 + random.randint(0,2622950)
-
-        # for certain experiments override these and
-        # choose some random frequences
-        if experiment == 1:
-            self.freq = random.choice([860000000, 864000000, 868000000])
-        else:
-            self.freq = 860000000
-
-        self.rectime = airtime(self.sf,self.cr,self.pl,self.bw)
-        # denote if packet is collided
-        self.collided = 0
-        self.processed = 0
-        # mark the packet as lost when it's rssi is below the sensitivity
-        # don't do this for experiment 3, as it requires a bit more work
-        if experiment != 3:
-            global minsensi
-            self.lost = self.rssi < minsensi
-            print("node {} bs {} lost {}".format(self.nodeid, self.bs, self.lost))
 
 
 #
@@ -498,6 +514,7 @@ def transmit(env,node:myNode):
         global nrBS
         for bs in range(0, nrAllNode):
            # *if (node in packetsAtBS[bs]):
+           txt = f"PKG from {node.id} to {bs} "
            if bs == node.id: # ! it self no packet 
                continue
            if (node in packetsAtNode[bs]):
@@ -598,6 +615,9 @@ def transmit(env,node:myNode):
 #
 
 # get arguments
+
+
+
 if len(sys.argv) >= 6:
     nrNodes = int(sys.argv[1])
     avgSendTime = int(sys.argv[2])
@@ -665,8 +685,8 @@ elif experiment == 3:
 
 Lpl = Ptx - minsensi
 print ("amin", minsensi, "Lpl", Lpl)
-maxDist = d0*(math.e**((Lpl-Lpld0)/(10.0*gamma)))
-#maxDist = 100
+#maxDist = d0*(math.e**((Lpl-Lpld0)/(10.0*gamma)))
+maxDist = 100
 print ("maxDist:", maxDist)
 
 nodes:list[myNode]
@@ -714,14 +734,29 @@ packetsRecNode = []
 # ! ****** Log Method *******
 def LogTxt_Node(node:myNode):
     textNode = f"Node ID ={node.id:>4} X ={node.x:>4} Y ={node.y:>4}\n"
-    with open(fPacketPkg, "a") as myfile:
+    with open(fPacketNode, "a") as myfile:
         myfile.write(textNode)
     myfile.close()
+
+def LogTxt_Pkg(time,send,to,result):
+    textPkg = f"{time} {send} {to} {result}"
+    with open(fPacketPkg, "a") as myfile:
+        myfile.write(textPkg)
+    myfile.close()
+
+
+# ! Array for location
+
+loX = []
+loY = []
 
 # * Gateway
 gateway = myNode(0,avgSendTime,20)
 gateway.x = int(maxX/2.0)
 gateway.y = int(maxY/2.0)
+
+loX.append(gateway.x)
+loY.append(gateway.y)
 
 LogTxt_Node(gateway)
 gateway.cansend = True
@@ -737,6 +772,8 @@ for i in range(nrBS,nrNodes+nrBS):
     node = myNode(i, avgSendTime,20)
     LogTxt_Node(node)
     nodes.append(node)
+    loX.append(node.x)
+    loY.append(node.y)
     packetsAtNode.append([])
     packetsRecNode.append([])
     env.process(transmit(env,node))
@@ -826,6 +863,19 @@ else:
 with open(fname, "a") as myfile:
     myfile.write(res)
 myfile.close()
+
+# plotting using plt.pyplot()
+plt.plot(loX,loY,'bo')
+#plt.plot([2,3,4],'ro')
+
+# axis labeling
+plt.xlabel('numbers')
+plt.ylabel('values')
+
+# figure name
+plt.title('Dot Plot : Red Dots')
+#plt.figure()
+plt.show()
 
 exit(0)
 #below not updated
