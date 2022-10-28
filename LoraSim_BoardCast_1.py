@@ -50,7 +50,7 @@
     data file can be easily plotted using e.g. gnuplot.
 """
 
-
+from myNode import myNode
 import simpy
 import random
 import numpy as np
@@ -113,91 +113,8 @@ sf10 = np.array([10,-132.75,-130.25,-128.75])
 sf11 = np.array([11,-134.5,-132.75,-128.75])
 sf12 = np.array([12,-133.25,-132.25,-132.25])
 
-
-
-# ! Move class node and packet 
-
-#
-# this function creates a node
-#
-class myNode():
-    def __init__(self, id, period, packetlen):
-        global bs
-        # ! add for create packet
-        self.packetlen = packetlen
-        self.cansend = False # ! initial is can't send 
-        # ! neighbor
-        self.neighbor_same = []
-        self.neighbor_upper = []
-        self.neighbor_lower = []
-        
-        self.temp_same = []
-        self.temp_upper = []
-        self.temp_lower = []
-        
-        self.finished = False
-        
-        # ! inital layer = 0
-        self.SFlevel = 0
-        
-        self.id = id
-        self.period = period
-        self.x = 0
-        self.y = 0
-        self.packet = []
-        self.dist = []
-        # this is very complex prodecure for placing nodes
-        # and ensure minimum distance between each pair of nodes
-        
-        self.packet:list[myPacket]
-        found = 0
-        rounds = 0
-        global nodes
-        while (found == 0 and rounds < 1000):
-            #global maxX
-            #global maxY
-            posx = random.randint(0,int(maxDist))
-            posy = random.randint(0,int(maxDist))
-            if len(nodes) > 0:
-                for index, n in enumerate(nodes):
-                    dist = np.sqrt(((abs(n.x-posx))**2)+((abs(n.y-posy))**2))
-                    if dist >= 10:
-                        found = 1
-                        self.x = posx
-                        self.y = posy
-                    else:
-                        rounds = rounds + 1
-                        if rounds == 1000:
-                            print ("could not place new node, giving up")
-                            exit(-2)
-            else:
-                print ("first node")
-                self.x = posx
-                self.y = posy
-                found = 1
-
-
-        # * namdanKz 
-        # ! move this part 
-        # ! create dist when all node already create
-        # ! create packet after that
-
-        # ! Moved
-        # create "virtual" packet for each BS
-        # global nrBS
-        # for i in range(0,nrBS):
-        #     d = np.sqrt((self.x-bs[i].x)*(self.x-bs[i].x)+(self.y-bs[i].y)*(self.y-bs[i].y))
-        #     self.dist.append(d)
-        #     self.packet.append(myPacket(self.id, packetlen, self.dist[i], i))
-        # print('node %d' %id, "x", self.x, "y", self.y, "dist: ", self.dist)
-
-        self.sent = 0
-
-        # graphics for node
-        global graphics
-        if (graphics == 1):
-            global ax
-            ax.add_artist(plt.Circle((self.x, self.y), 2, fill=True, color='blue'))
+# ! Move class packet 
+# ! Move Node to new file
 
 #
 # this function creates a packet (associated with a node)
