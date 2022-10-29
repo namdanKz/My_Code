@@ -269,7 +269,11 @@ def frequencyCollision(p1,p2):
             return True
     return False
 
-def sfCollision(p1, p2):
+def sfCollision(p1:myNode, p2:myNode):
+    # node id 0 = gateway in this algorithm
+    # p2 is destination so every sf can send to sf8
+    if p2.id == 0:
+        return True
     if p1.sf == p2.sf:
         # p2 may have been lost too, will be marked by other checks
         return True
@@ -326,80 +330,6 @@ def airtime(sf,cr,pl,bw):
     payloadSymbNB = 8 + max(math.ceil((8.0*pl-4.0*sf+28+16-20*H)/(4.0*(sf-2*DE)))*(cr+4),0)
     Tpayload = payloadSymbNB * Tsym
     return Tpream + Tpayload 
-
-
-
-#
-# this function creates a BS
-#
-class myBS():
-    def __init__(self, id):
-        self.id = id
-        self.x = 0
-        self.y = 0
-
-        # This is a hack for now
-        global nrBS
-        global maxDist
-        global maxX
-        global maxY
-
-        if (nrBS == 1 and self.id == 0):
-            self.x = maxX/2.0
-            self.y = maxY/2.0
-
-
-        if (nrBS == 3 or nrBS == 2):
-            self.x = (self.id+1)*maxX/float(nrBS+1)
-            self.y = maxY/2.0
-
-        if (nrBS == 4):
-            if (self.id < 2):
-                self.x = (self.id+1)*maxX/3.0
-                self.y = maxY/3.0
-            else:
-                self.x = (self.id+1-2)*maxX/3.0
-                self.y = 2*maxY/3.0
-
-        if (nrBS == 6):
-            if (self.id < 3):
-                self.x = (self.id+1)*maxX/4.0
-                self.y = maxY/3.0
-            else:
-                self.x = (self.id+1-3)*maxX/4.0
-                self.y = 2*maxY/3.0
-
-        if (nrBS == 8):
-            if (self.id < 4):
-                self.x = (self.id+1)*maxX/5.0
-                self.y = maxY/3.0
-            else:
-                self.x = (self.id+1-4)*maxX/5.0
-                self.y = 2*maxY/3.0
-
-        if (nrBS == 24):
-            if (self.id < 8):
-                self.x = (self.id+1)*maxX/9.0
-                self.y = maxY/4.0
-            elif (self.id < 16):
-                self.x = (self.id+1-8)*maxX/9.0
-                self.y = 2*maxY/4.0
-            else:
-                self.x = (self.id+1-16)*maxX/9.0
-                self.y = 3*maxY/4.0
-
-
-        print ("BSx:", self.x, "BSy:", self.y)
-
-        global graphics
-        if (graphics):
-            global ax
-            # XXX should be base station position
-            ax.add_artist(plt.Circle((self.x, self.y), 3, fill=True, color='green'))
-            ax.add_artist(plt.Circle((self.x, self.y), maxDist, fill=False, color='green'))
-
-
-
 
 #
 # main discrete event loop, runs for each node
@@ -533,8 +463,6 @@ def transmit(env,node:myNode):
 
 # get arguments
 
-
-
 if len(sys.argv) >= 6:
     nrNodes = int(sys.argv[1])
     avgSendTime = int(sys.argv[2])
@@ -635,13 +563,13 @@ if (graphics == 1):
 bs = []
 
 # list of packets at each base station, init with 0 packets
-packetsAtBS = []
-packetsRecBS = []
-for i in range(0,nrBS):
-    b = myBS(i)
-    bs.append(b)
-    packetsAtBS.append([])
-    packetsRecBS.append([])
+# packetsAtBS = []
+# packetsRecBS = []
+# for i in range(0,nrBS):
+#     b = myBS(i)
+#     bs.append(b)
+#     packetsAtBS.append([])
+#     packetsRecBS.append([])
 
 # * Copy
 packetsAtNode = []
@@ -698,17 +626,27 @@ for i in range(nrBS,nrNodes+nrBS):
 # * Create distance matrix and add packet to node
 cols = nrAllNode
 rows = nrAllNode
-dist_mat =[[0 for i in range(cols)] for j in range(rows)]
+dist_mat = [[0 for i in range(cols)] for j in range(rows)]
+pack_mat = [[0 for i in range(cols)] for j in range(rows)]
 for i in range(0,nrAllNode):
+    # At i == j it's self (same node) dist = 0 package = null
     for j in range(i+1,nrAllNode):
         dist_node = np.sqrt((nodes[i].x-nodes[j].x)*(nodes[i].x-nodes[j].x)+(nodes[i].y-nodes[j].y)*(nodes[i].y-nodes[j].y))
         dist_mat[i][j] = dist_node
+        
+        
+        packageAtNode = myPacket(nodes[i].id, nodes[i].packetlen, dist_node, j)
+        pack_mat[i][j] = packageAtNode
+        
+        #if not packageAtNode.lost:
+             
+        
         print(f"Dist Node = {dist_node} i = {i} j = {j}")
 print("***** distatance matrix *****")
 print(dist_mat)    
     
+    
 # *add package to node
-
 for i in range(0,nrAllNode):
     for j in range(0,nrAllNode):
         if i < j:
@@ -718,7 +656,8 @@ for i in range(0,nrAllNode):
             continue
         else:
             node_dist = dist_mat[j][i]
-        nodes[i].packet.append(myPacket(nodes[i].id, nodes[i].packetlen, node_dist, j))
+        addPacket = myPacket(nodes[i].id, nodes[i].packetlen, node_dist, j)
+        nodes[i].packet.append(addPacket)
 
 
     

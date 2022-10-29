@@ -23,6 +23,10 @@ class myNode():
         self.x = 0
         self.y = 0
         self.packet = []
-        self.dist = []
+        
+        
+        
+        self.parent = -1
+        self.child = []
         
         self.sent = 0
