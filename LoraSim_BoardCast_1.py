@@ -17,7 +17,7 @@
 
 """
  SYNOPSIS:
-   ./loraDirMulBS.py <nodes> <avgsend> <experiment> <simtime> <basestation> [collision]
+   ./loraDirMulbs.py <nodes> <avgsend> <experiment> <simtime> <basestation> [collision]
  DESCRIPTION:
     nodes
         number of nodes to simulate
@@ -131,6 +131,7 @@ class myPacket():
         global GL
 
         # new: base station ID
+        # ! bs = destination node number
         self.bs = bs
         self.nodeid = nodeid
         # randomize configuration values
@@ -149,15 +150,19 @@ class myPacket():
             self.sf = 6
             self.cr = 1
             self.bw = 500
-
-
+        
+        # ! Toomtam 
+        self.sf = 7
+        self.cr = 4
+        self.bw = 125
+        
+        
         # for experiment 3 find the best setting
-        # OBS, some hardcoded values
+        # Obs, some hardcoded values
         Prx = Ptx  ## zero path loss by default
 
         # log-shadow
         Lpl = Lpld0 + 10*gamma*math.log(distance/d0)
-        print (Lpl)
         Prx = Ptx - GL - Lpl
 
         if (experiment == 3):
@@ -214,7 +219,10 @@ class myPacket():
         if experiment != 3:
             global minsensi
             self.lost = self.rssi < minsensi
-            print("node {} bs {} lost {}".format(self.nodeid, self.bs, self.lost))
+            if self.lost:
+                print("node {} bs {} lost {}".format(self.nodeid, self.bs, self.lost))
+            else:
+                print("node {} bs {} lost {}".format(self.nodeid, self.bs, self.lost))
 
 #
 # check for collisions at base station
@@ -228,7 +236,7 @@ def checkcollision(packet:myPacket):
     # lost packets don't collide
     if packet.lost:
        return 0
-    #if packetsAtBS[packet.bs]:
+    #if packetsAtbs[packet.bs]:
     if packetsAtNode[packet.bs]:
         for other in packetsAtNode[packet.bs]:
             if other.id != packet.nodeid:
@@ -269,10 +277,10 @@ def frequencyCollision(p1,p2):
             return True
     return False
 
-def sfCollision(p1:myNode, p2:myNode):
+def sfCollision(p1:myPacket, p2:myPacket):
     # node id 0 = gateway in this algorithm
     # p2 is destination so every sf can send to sf8
-    if p2.id == 0:
+    if p2.bs == 0:
         return True
     if p1.sf == p2.sf:
         # p2 may have been lost too, will be marked by other checks
@@ -355,20 +363,26 @@ def transmit(env,node:myNode):
 
 
         # * namdanKz 
-        # * change from 0 to nrBs to all node in system
+        # * change from 0 to nrbs to all node in system
         # ! Excep itself
 
-        global nrBS
+        global nrbs
         for bs in range(0, nrAllNode):
-           # *if (node in packetsAtBS[bs]):
+           # *if (node in packetsAtbs[bs]):
            txt = f"PKG from {node.id} to {bs} "
            if bs == node.id: # ! it self no packet 
                continue
            if (node in packetsAtNode[bs]):
                 print ("ERROR: packet already in")
            else:
-                # adding packet if no collision
-                if (checkcollision(node.packet[bs])==1): 
+                # adding packet if no collisio
+                
+                if node.id < bs:
+                    send_packet = pack_mat[node.id][bs]
+                else:
+                    send_packet = pack_mat[bs][node.id]
+
+                if (checkcollision(send_packet)==1): 
                     node.packet[bs].collided = 1
                 else:
                     node.packet[bs].collided = 0
@@ -391,7 +405,7 @@ def transmit(env,node:myNode):
                 lostPackets.append(node.packet[bs].seqNr)
             else:
                 if node.packet[bs].collided == 0:
-                    #packetsRecBS[bs].append(node.packet[bs].seqNr)
+                    #packetsRecbs[bs].append(node.packet[bs].seqNr)
                     packetsRecNode[bs].append(node.packet[bs].seqNr)
                     if (recPackets):
                         if (recPackets[-1] != node.packet[bs].seqNr):
@@ -442,7 +456,7 @@ def transmit(env,node:myNode):
         # complete packet has been received by base station
         # can remove it
         for bs in range(0, nrAllNode): 
-            # *if (node in packetsAtBS[bs]):
+            # *if (node in packetsAtbs[bs]):
             if (node in packetsAtNode[bs]):
                 packetsAtNode[bs].remove(node)
                
@@ -468,32 +482,32 @@ if len(sys.argv) >= 6:
     avgSendTime = int(sys.argv[2])
     experiment = int(sys.argv[3])
     simtime = int(sys.argv[4])
-    nrBS = int(sys.argv[5])
+    nrbs = int(sys.argv[5])
     if len(sys.argv) > 6:
         full_collision = bool(int(sys.argv[6]))
     print ("Nodes:", nrNodes)
     print ("AvgSendTime (exp. distributed):",avgSendTime)
     print ("Experiment: ", experiment)
     print ("Simtime: ", simtime)
-    print ("nrBS: ", nrBS)
-    if (nrBS > 4 and nrBS!=8 and nrBS!=6 and nrBS != 24):
+    print ("nrbs: ", nrbs)
+    if (nrbs > 4 and nrbs!=8 and nrbs!=6 and nrbs != 24):
         print("too many base stations, max 4 or 6 or 8 base stations")
         exit(-1)
     print ("Full Collision: "), full_collision
 else:
-    print ("usage: ./loraDir nrNodes avgSendTime experimentNr simtime nrBS [full_collision]")
+    print ("usage: ./loraDir nrNodes avgSendTime experimentNr simtime nrbs [full_collision]")
     print ("experiment 0 and 1 use 1 frequency only")
     exit(-1)
 
 
 # global stuff
 nodes = []
-packetsAtBS = []
+packetsAtbs = []
 env = simpy.Environment()
 
 # * new
 packetsAtNode = []
-nrAllNode = nrBS + nrNodes
+nrAllNode = nrbs + nrNodes
 
 
 # max distance: 300m in city, 3000 m outside (5 km Utz experiment)
@@ -510,7 +524,7 @@ recPackets=[]
 collidedPackets=[]
 lostPackets = []
 
-Ptx = 14
+Ptx = 23
 gamma = 2.08
 d0 = 40.0
 var = 0           # variance ignored for now
@@ -528,10 +542,12 @@ elif experiment == 2:
 elif experiment == 3:
     minsensi = np.amin(sensi) ## Experiment 3 can use any setting, so take minimum
 
+minsensi = sensi[5,2]
+
 Lpl = Ptx - minsensi
 print ("amin", minsensi, "Lpl", Lpl)
 #maxDist = d0*(math.e**((Lpl-Lpld0)/(10.0*gamma)))
-maxDist = 100
+maxDist = 500
 print ("maxDist:", maxDist)
 
 nodes:list[myNode]
@@ -542,8 +558,8 @@ bsy = maxDist+10
 xmax = bsx + maxDist + 20
 ymax = bsy + maxDist + 20
 
-# maximum number of packets the BS can receive at the same time
-maxBSReceives = 8
+# maximum number of packets the bs can receive at the same time
+maxbsReceives = 8
 
 maxX = 2 * maxDist * math.sin(60*(math.pi/180)) # == sqrt(3) * maxDist
 print("maxX ", maxX)
@@ -563,13 +579,13 @@ if (graphics == 1):
 bs = []
 
 # list of packets at each base station, init with 0 packets
-# packetsAtBS = []
-# packetsRecBS = []
-# for i in range(0,nrBS):
-#     b = myBS(i)
+# packetsAtbs = []
+# packetsRecbs = []
+# for i in range(0,nrbs):
+#     b = mybs(i)
 #     bs.append(b)
-#     packetsAtBS.append([])
-#     packetsRecBS.append([])
+#     packetsAtbs.append([])
+#     packetsRecbs.append([])
 
 # * Copy
 packetsAtNode = []
@@ -590,6 +606,9 @@ def LogTxt_Pkg(time,send,to,result):
     myfile.close()
 
 
+
+
+
 # ! Array for location
 
 loX = []
@@ -597,11 +616,30 @@ loY = []
 
 # * Gateway
 gateway = myNode(0,avgSendTime,20)
-gateway.x = int(maxX/2.0)
-gateway.y = int(maxY/2.0)
+gateway.x = int(maxDist/2.0)
+gateway.y = int(maxDist/2.0)
 
-loX.append(gateway.x)
-loY.append(gateway.y)
+# 5*5 = 25 sqr box
+eachPart = int(maxDist/5)
+
+# number of node in each box
+
+listLocation = []
+# ! Generate node location function
+def genNode():
+    for i in range(0,maxDist+1,eachPart):
+        tempLocation = []
+        for j in range(0,maxDist+1,eachPart):
+            x = random.randint(i,i+eachPart)
+            y = random.randint(j-eachPart,j)
+            # while not [x,y] in listLocation:
+            #     x = random.randint(i,i+eachPart)
+            #     y = random.randint(j,j+eachPart)
+            listLocation.append([x,y])
+    return
+
+
+genNode()
 
 LogTxt_Node(gateway)
 gateway.cansend = True
@@ -611,10 +649,14 @@ packetsAtNode.append([])
 packetsRecNode.append([])
 
 # * node id is next to base station
-for i in range(nrBS,nrNodes+nrBS):
+for i in range(nrbs,nrNodes+nrbs):
     # myNode takes period (in ms), base station id packetlen (in Bytes)
     # 1000000 = 16 min
     node = myNode(i, avgSendTime,20)
+    
+    node.x = listLocation[i-1][0]
+    node.y = listLocation[i-1][1]
+    
     LogTxt_Node(node)
     nodes.append(node)
     loX.append(node.x)
@@ -660,7 +702,6 @@ for i in range(0,nrAllNode):
         nodes[i].packet.append(addPacket)
 
 
-    
 #prepare show
 if (graphics == 1):
     plt.xlim([0, xmax])
@@ -677,9 +718,6 @@ with open('basestation.txt', 'w') as bfile:
     for basestation in bs:
         bfile.write('{x} {y} {id}\n'.format(**vars(basestation)))
         
-        
-
-
 # start simulation
 env.run(until=simtime)
 
@@ -694,9 +732,10 @@ print ("nr lost packets", len(lostPackets))
 #print "sent packets: ", sent
 #print "sent packets-collisions: ", sent-nrCollisions
 #print "received packets: ", len(recPackets)
-for i in range(0,nrBS):
-    print ("packets at BS",i, ":", len(packetsRecBS[i]))
-print ("sent packets: ", packetSeq)
+# ! not use
+# for i in range(0,nrbs):
+#     print ("packets at bs",i, ":", len(packetsRecbs[i]))
+# print ("sent packets: ", packetSeq)
 
 # data extraction rate
 der = len(recPackets)/float(packetSeq)
@@ -710,7 +749,7 @@ if (graphics == 1):
 
 # save experiment data into a dat file that can be read by e.g. gnuplot
 # name of file would be:  exp0.dat for experiment 0
-fname = "exp" + str(experiment) + "BS" + str(nrBS) + ".dat"
+fname = "exp" + str(experiment) + "bs" + str(nrbs) + ".dat"
 print (fname)
 if os.path.isfile(fname):
     res = "\n" + str(nrNodes) + " " + str(der)
@@ -722,7 +761,7 @@ myfile.close()
 
 # plotting using plt.pyplot()
 plt.plot(loX,loY,'bo')
-#plt.plot([2,3,4],'ro')
+plt.plot(gateway.x,gateway.y,'ro')
 
 # axis labeling
 plt.xlabel('numbers')
@@ -732,6 +771,10 @@ plt.ylabel('values')
 plt.title('Dot Plot : Red Dots')
 #plt.figure()
 plt.show()
+
+def transmit2(env,node:myNode):
+    while True:
+        print()
 
 exit(0)
 #below not updated

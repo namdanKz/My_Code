@@ -1,17 +1,8 @@
 import math
 import random
 import numpy as np
-
-Ptx = 14
-gamma = 2.08
-d0 = 40.0
-var = 0           # variance ignored for now
-Lpld0 = 127.41
-GL = 0
-
-sf_cofig = 7
-cr_config = 1
-bw_config = 500
+import config as cf
+from myNode import myNode
 
 # this is an array with measured values for sensitivity
 # see paper, Table 3
@@ -31,23 +22,23 @@ minsensi = np.amin(sensi)
 # it also sets all parameters, currently random
 #
 class myPacket():
-    def __init__(self, nodeid, plen, distance, bs):
+    def __init__(self, node:myNode, plen, distance, bs):
         # new: base station ID
         self.bs = bs
-        self.nodeid = nodeid
+        self.nodeid = node.id
         # randomize configuration values
-        self.sf = sf_cofig
-        self.cr = cr_config
-        self.bw = bw_config
+        self.sf = node.SF
+        self.cr = cf.cr_config
+        self.bw = cf.bw_config
         
         # for experiment 3 find the best setting
         # OBS, some hardcoded values
-        Prx = Ptx  ## zero path loss by default
+        Prx = cf.Ptx  ## zero path loss by default
 
         # log-shadow
-        Lpl = Lpld0 + 10*gamma*math.log(distance/d0)
+        Lpl = cf.Lpld0 + 10*cf.gamma*math.log(distance/cf.d0)
         print (Lpl)
-        Prx = Ptx - GL - Lpl
+        Prx = cf.Ptx - cf.GL - Lpl
         
         # transmission range, needs update XXX
         self.transRange = 150
@@ -83,7 +74,7 @@ def airtime(sf,cr,pl,bw):
     if sf == 6:
         # can only have implicit header with SF6
         H = 1
-
+    
     Tsym = (2.0**sf)/bw
     Tpream = (Npream + 4.25)*Tsym
     payloadSymbNB = 8 + max(math.ceil((8.0*pl-4.0*sf+28+16-20*H)/(4.0*(sf-2*DE)))*(cr+4),0)
