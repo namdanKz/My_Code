@@ -787,7 +787,6 @@ def transmit2(env:simpy.Environment,node:myNode):
             # node is reciving packet
             if nodes[reach].AvailableTime > env.now:
                 # can't send
-                LogTxt_Pkg(env.now,node.id,reach,"Fail")
                 continue
             if node.id < reach:
                 packet_send:myPacket = pack_mat[node.id][reach]
@@ -795,11 +794,9 @@ def transmit2(env:simpy.Environment,node:myNode):
                 packet_send = pack_mat[reach][node.id]
             if(checkcollision(packet_send)==1):
                 # can't send
-                LogTxt_Pkg(env.now,node.id,reach,"Fail")
                 continue
             # packet was sent from node to nodes[reach]
             nodes[reach].AvailableTime = env.now + packet_send.rectime
-            LogTxt_Pkg(env.now,node.id,reach,"Pass")
             if not nodes[reach].cansend:
                 continue
 
