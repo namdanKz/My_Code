@@ -50,6 +50,7 @@
     data file can be easily plotted using e.g. gnuplot.
 """
 
+from msilib.schema import Environment
 from myNode import myNode
 import simpy
 import random
@@ -600,7 +601,7 @@ def LogTxt_Node(node:myNode):
     myfile.close()
 
 def LogTxt_Pkg(time,send,to,result):
-    textPkg = f"{time} {send} {to} {result}"
+    textPkg = f"{time} from {send} to {to} {result}"
     with open(fPacketPkg, "a") as myfile:
         myfile.write(textPkg)
     myfile.close()
@@ -669,7 +670,7 @@ for i in range(nrbs,nrNodes+nrbs):
 cols = nrAllNode
 rows = nrAllNode
 dist_mat = [[0 for i in range(cols)] for j in range(rows)]
-pack_mat = [[0 for i in range(cols)] for j in range(rows)]
+pack_mat:list[myPacket]= [[0 for i in range(cols)] for j in range(rows)]
 for i in range(0,nrAllNode):
     # At i == j it's self (same node) dist = 0 package = null
     for j in range(i+1,nrAllNode):
@@ -772,9 +773,36 @@ plt.title('Dot Plot : Red Dots')
 #plt.figure()
 plt.show()
 
-def transmit2(env,node:myNode):
+def transmit2(env:simpy.Environment,node:myNode):
     while True:
-        print()
+        if not node.cansend:
+            yield env.timeout(1)
+            continue
+        
+        yield env.timeout(random.expovariate(1.0/float(node.period)))
+        for reach in node.reached[node.SF]:
+            if node.id == reach:
+                # ! prevent from same node <<< this must be imposible but for sure 
+                continue
+            # node is reciving packet
+            if nodes[reach].AvailableTime > env.now:
+                # can't send
+                LogTxt_Pkg(env.now,node.id,reach,"Fail")
+                continue
+            if node.id < reach:
+                packet_send:myPacket = pack_mat[node.id][reach]
+            else:
+                packet_send = pack_mat[reach][node.id]
+            if(checkcollision(packet_send)==1):
+                # can't send
+                LogTxt_Pkg(env.now,node.id,reach,"Fail")
+                continue
+            # packet was sent from node to nodes[reach]
+            nodes[reach].AvailableTime = env.now + packet_send.rectime
+            LogTxt_Pkg(env.now,node.id,reach,"Pass")
+            if not nodes[reach].cansend:
+                continue
+
 
 exit(0)
 #below not updated

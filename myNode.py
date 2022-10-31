@@ -4,6 +4,9 @@ class myNode():
         # initail sf is 7
         self.SF = 7
         
+        self.AvailableTime = 0
+        
+        
         # ! add for create packet
         self.packetlen = packetlen
         self.cansend = False # ! initial is can't send 
@@ -31,7 +34,6 @@ class myNode():
         # self.SFlevel = [[] for _ in range(13)]
         self.SFlevel = 0
         
-        
         self.id = id
         self.period = period
         self.x = 0
@@ -40,6 +42,7 @@ class myNode():
         
         # ! nodes id of node that packets are not lost
         self.reached = [[] for _ in range(13)]
+        
         
         
         self.parent = -1
