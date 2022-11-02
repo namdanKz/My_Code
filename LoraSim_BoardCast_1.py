@@ -472,6 +472,72 @@ def transmit(env,node:myNode):
         else:
             node.finished = True
 
+def transmit2(env:simpy.Environment,node:myNode):
+    while True:
+        if not node.cansend:
+            yield env.timeout(1)
+            continue
+        
+        yield env.timeout(random.expovariate(1.0/float(node.period)))
+        for reach in node.reached[node.SF]:
+            if node.id == reach:
+                # ! prevent from same node <<< this must be imposible but for sure 
+                continue
+            #destination node
+            destNode:myNode = nodes[reach]
+            # node is reciving packet
+            if destNode.AvailableTime > env.now:
+                # can't send
+                continue
+            if node.id < reach:
+                packet_send:myPacket = pack_mat[node.id][reach]
+            else:
+                packet_send = pack_mat[reach][node.id]
+            if(checkcollision(packet_send)==1):
+                # can't send
+                continue
+            # packet was sent from node to nodes[reach]
+            destNode.AvailableTime = env.now + packet_send.rectime
+            
+            # First recived
+            if not destNode.cansend:
+                destNode.cansend = True
+                destNode.SFlevel = node.SFlevel+1
+                node.nbUpper[node.SF].append(destNode.id)
+                destNode.nbLower[destNode.SF].append(node.id)
+            else:
+                # * Clear all node in list first
+                if destNode.id in node.nbLower[node.SF]:
+                    node.nbLower[node.SF].remove(destNode.id)
+                if destNode.id in node.nbSame[node.SF]:
+                    node.nbSame[node.SF].remove(destNode.id)
+                if destNode.id in node.nbUpper[node.SF]:
+                    node.nbUpper[node.SF].remove(destNode.id)
+                    
+                if node.id in destNode.nbLower[destNode.SF]:
+                    destNode.nbLower[destNode.SF].remove(node.id)
+                if node.id in destNode.nbSame[destNode.SF]:
+                    destNode.nbSame[destNode.SF].remove(node.id)
+                if node.id in destNode.nbUpper[destNode.SF]:
+                    destNode.nbUpper[destNode.SF].remove(node.id)
+
+                if node.SFlevel == destNode.SFlevel:
+                    node.nbSame[node.SF].append(destNode.id)
+                    destNode.nbSame[destNode.SF].append(node.id)
+                elif node.SFlevel < destNode.SFlevel:
+                    node.nbUpper.append(destNode.id)
+                    destNode.nbLower[destNode.SF].append(node.id)
+                    destNode.SFlevel = node.SFlevel+1
+                else:
+                    node.nbLower[node.id].append(destNode.id)
+                    destNode.nbUpper[destNode.SF].append(node.id)
+                    node.SFlevel = destNode.SFlevel+1
+        # take first packet rectime
+        yield env.timeout(pack_mat[0][1].rectime)
+
+
+
+
 #
 # "main" program
 #
@@ -607,9 +673,6 @@ def LogTxt_Pkg(time,send,to,result):
     myfile.close()
 
 
-
-
-
 # ! Array for location
 
 loX = []
@@ -645,7 +708,7 @@ genNode()
 LogTxt_Node(gateway)
 gateway.cansend = True
 nodes.append(gateway)
-env.process(transmit(env,gateway))
+env.process(transmit2(env,gateway))
 packetsAtNode.append([])
 packetsRecNode.append([])
 
@@ -664,7 +727,7 @@ for i in range(nrbs,nrNodes+nrbs):
     loY.append(node.y)
     packetsAtNode.append([])
     packetsRecNode.append([])
-    env.process(transmit(env,node))
+    env.process(transmit2(env,node))
 
 # * Create distance matrix and add packet to node
 cols = nrAllNode
@@ -681,26 +744,27 @@ for i in range(0,nrAllNode):
         packageAtNode = myPacket(nodes[i].id, nodes[i].packetlen, dist_node, j)
         pack_mat[i][j] = packageAtNode
         
-        #if not packageAtNode.lost:
-             
+        if not packageAtNode.lost:
+             nodes[i].reached[nodes[i].SF].append(j)
+             nodes[j].reached[nodes[j].SF].append(i)
         
         print(f"Dist Node = {dist_node} i = {i} j = {j}")
 print("***** distatance matrix *****")
 print(dist_mat)    
     
     
-# *add package to node
-for i in range(0,nrAllNode):
-    for j in range(0,nrAllNode):
-        if i < j:
-            node_dist = dist_mat[i][j]
-        elif i == j:
-            nodes[i].packet.append([])
-            continue
-        else:
-            node_dist = dist_mat[j][i]
-        addPacket = myPacket(nodes[i].id, nodes[i].packetlen, node_dist, j)
-        nodes[i].packet.append(addPacket)
+# # *add package to node
+# for i in range(0,nrAllNode):
+#     for j in range(0,nrAllNode):
+#         if i < j:
+#             node_dist = dist_mat[i][j]
+#         elif i == j:
+#             nodes[i].packet.append([])
+#             continue
+#         else:
+#             node_dist = dist_mat[j][i]
+#         addPacket = myPacket(nodes[i].id, nodes[i].packetlen, node_dist, j)
+#         nodes[i].packet.append(addPacket)
 
 
 #prepare show
@@ -738,27 +802,27 @@ print ("nr lost packets", len(lostPackets))
 #     print ("packets at bs",i, ":", len(packetsRecbs[i]))
 # print ("sent packets: ", packetSeq)
 
-# data extraction rate
-der = len(recPackets)/float(packetSeq)
-print ("DER:", der)
-#der = (nrReceived)/float(sent)
-#print "DER method 2:", der
+# # data extraction rate
+# der = len(recPackets)/float(packetSeq)
+# print ("DER:", der)
+# #der = (nrReceived)/float(sent)
+# #print "DER method 2:", der
 
-# this can be done to keep graphics visible
-if (graphics == 1):
-    sys.stdin.read()
+# # this can be done to keep graphics visible
+# if (graphics == 1):
+#     sys.stdin.read()
 
-# save experiment data into a dat file that can be read by e.g. gnuplot
-# name of file would be:  exp0.dat for experiment 0
-fname = "exp" + str(experiment) + "bs" + str(nrbs) + ".dat"
-print (fname)
-if os.path.isfile(fname):
-    res = "\n" + str(nrNodes) + " " + str(der)
-else:
-    res = "# nrNodes DER\n" + str(nrNodes) + " " + str(der)
-with open(fname, "a") as myfile:
-    myfile.write(res)
-myfile.close()
+# # save experiment data into a dat file that can be read by e.g. gnuplot
+# # name of file would be:  exp0.dat for experiment 0
+# fname = "exp" + str(experiment) + "bs" + str(nrbs) + ".dat"
+# print (fname)
+# if os.path.isfile(fname):
+#     res = "\n" + str(nrNodes) + " " + str(der)
+# else:
+#     res = "# nrNodes DER\n" + str(nrNodes) + " " + str(der)
+# with open(fname, "a") as myfile:
+#     myfile.write(res)
+# myfile.close()
 
 # plotting using plt.pyplot()
 plt.plot(loX,loY,'bo')
@@ -772,35 +836,7 @@ plt.ylabel('values')
 plt.title('Dot Plot : Red Dots')
 #plt.figure()
 plt.show()
-
-def transmit2(env:simpy.Environment,node:myNode):
-    while True:
-        if not node.cansend:
-            yield env.timeout(1)
-            continue
-        
-        yield env.timeout(random.expovariate(1.0/float(node.period)))
-        for reach in node.reached[node.SF]:
-            if node.id == reach:
-                # ! prevent from same node <<< this must be imposible but for sure 
-                continue
-            # node is reciving packet
-            if nodes[reach].AvailableTime > env.now:
-                # can't send
-                continue
-            if node.id < reach:
-                packet_send:myPacket = pack_mat[node.id][reach]
-            else:
-                packet_send = pack_mat[reach][node.id]
-            if(checkcollision(packet_send)==1):
-                # can't send
-                continue
-            # packet was sent from node to nodes[reach]
-            nodes[reach].AvailableTime = env.now + packet_send.rectime
-            if not nodes[reach].cansend:
-                continue
-
-
+                                                    
 exit(0)
 #below not updated
 

@@ -16,13 +16,14 @@ class myNode():
         self.neighbor_upper = []
         self.neighbor_lower = []
         
-        # self.neighbor_same = [[] for _ in range(13)]
-        # self.neighbor_upper = [[] for _ in range(13)]
-        # self.neighbor_lower = [[] for _ in range(13)]
-        
-        # self.temp_same = [[] for _ in range(13)]
-        # self.temp_upper = [[] for _ in range(13)]
-        # self.temp_lower = [[] for _ in range(13)]
+        # ! nb = neighbor
+        self.nbSame = [[] for _ in range(13)]
+        self.nbUpper = [[] for _ in range(13)]
+        self.nbLower = [[] for _ in range(13)]
+    
+        self.tmpSame = [[] for _ in range(13)]
+        self.tmpUpper = [[] for _ in range(13)]
+        self.tmpLower = [[] for _ in range(13)]
         
         self.temp_same = []
         self.temp_upper = []
