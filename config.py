@@ -2,6 +2,8 @@ import numpy as np
 
 # this is an array with measured values for sensitivity
 # see paper, Table 3
+# 0 = SF 
+# 1 = sensi at BW125 2 at BW250 3 at BW500
 sf7 = np.array([7,-126.5,-124.25,-120.75])
 sf8 = np.array([8,-127.25,-126.75,-124.0])
 sf9 = np.array([9,-131.25,-128.25,-127.5])
@@ -12,10 +14,10 @@ sf12 = np.array([12,-133.25,-132.25,-132.25])
 
 sf_cofig = 7
 cr_config = 1
-bw_config = 500
+bw_config = 125
 
 # width of area of the experiment
-maxDist = 500
+maxDist = 400
 
 Ptx = 23 
 gamma = 2.08

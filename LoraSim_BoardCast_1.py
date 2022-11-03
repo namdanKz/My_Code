@@ -50,7 +50,6 @@
     data file can be easily plotted using e.g. gnuplot.
 """
 
-from msilib.schema import Environment
 from myNode import myNode
 import simpy
 import random
@@ -61,8 +60,9 @@ import matplotlib.pyplot as plt
 import os
 from matplotlib.patches import Rectangle
 from datetime import datetime
-
+import config
 import matplotlib.pyplot as plt
+#from myPacket import myPacket
 
 
 now = datetime.now()
@@ -122,7 +122,7 @@ sf12 = np.array([12,-133.25,-132.25,-132.25])
 # it also sets all parameters, currently random
 #
 class myPacket():
-    def __init__(self, nodeid, plen, distance, bs):
+    def __init__(self, nodeid, plen, distance, bs,SF):
         global experiment
         global Ptx
         global gamma
@@ -153,7 +153,7 @@ class myPacket():
             self.bw = 500
         
         # ! Toomtam 
-        self.sf = 7
+        self.sf = SF
         self.cr = 4
         self.bw = 125
         
@@ -219,11 +219,23 @@ class myPacket():
         # ! note this in paper
         if experiment != 3:
             global minsensi
+            if self.sf == 7:
+                minsensi = sensi[0,1]
+            elif self.sf == 8:
+                minsensi = sensi[1,1]
+            elif self.sf == 9:
+                minsensi = sensi[2,1]
+            elif self.sf == 10:
+                minsensi = sensi[3,1]
+            elif self.sf == 11:
+                minsensi = sensi[4,1]
+            elif self.sf == 12:
+                minsensi = sensi[5,1]
             self.lost = self.rssi < minsensi
             if self.lost:
-                print("node {} bs {} lost {}".format(self.nodeid, self.bs, self.lost))
+                print("node {} bs {} lost {} min{}".format(self.nodeid, self.bs, self.lost,minsensi))
             else:
-                print("node {} bs {} lost {}".format(self.nodeid, self.bs, self.lost))
+                print("node {} bs {} lost {} min{}".format(self.nodeid, self.bs, self.lost,minsensi))
 
 #
 # check for collisions at base station
@@ -494,10 +506,10 @@ def transmit2(env:simpy.Environment,node:myNode):
                 if destNode.AvailableTime > env.now:
                     # can't send
                     continue
-                if node.id < reach:
+                if node.id < destNode.id:
                     packet_send:myPacket = pack_mat[node.SF][node.id][destNode.id]
                 else:
-                    packet_send = pack_mat[destNode.id][node.id]
+                    packet_send = pack_mat[node.SF][destNode.id][node.id]
                 if(checkcollision(packet_send)==1):
                     # can't send
                     continue
@@ -512,31 +524,11 @@ def transmit2(env:simpy.Environment,node:myNode):
                     destNode.nbLower[destNode.SF].append(node.id)
                 else:
                     # * Clear all node in list first
-                    if destNode.id in node.nbLower[node.SF]:
-                        node.nbLower[node.SF].remove(destNode.id)
-                    elif destNode.id in node.nbSame[node.SF]:
-                        node.nbSame[node.SF].remove(destNode.id)
-                    elif destNode.id in node.nbUpper[node.SF]:
-                        node.nbUpper[node.SF].remove(destNode.id)
+                    node.ClearNeighbor(destNode.id)
+                    destNode.ClearNeighbor(node.id)
 
-                    if node.id in destNode.nbLower[destNode.SF]:
-                        destNode.nbLower[destNode.SF].remove(node.id)
-                    elif node.id in destNode.nbSame[destNode.SF]:
-                        destNode.nbSame[destNode.SF].remove(node.id)
-                    elif node.id in destNode.nbUpper[destNode.SF]:
-                        destNode.nbUpper[destNode.SF].remove(node.id)
-
-                    if node.SFlevel[node.SF] == destNode.SFlevel[destNode.SF]:
-                        node.nbSame[node.SF].append(destNode.id)
-                        destNode.nbSame[destNode.SF].append(node.id)
-                    elif node.SFlevel[node.SF] < destNode.SFlevel[destNode.SF]:
-                        node.nbUpper.append(destNode.id)
-                        destNode.nbLower[destNode.SF].append(node.id)
-                        destNode.SFlevel[destNode.SF] = node.SFlevel[node.SF]+1
-                    else:
-                        node.nbLower[node.SF].append(destNode.id)
-                        destNode.nbUpper[destNode.SF].append(node.id)
-                        node.SFlevel[node.SF] = destNode.SFlevel[destNode.SF]+1
+                    node.UpdateNeighbor(destNode.id,destNode.SFlevel[destNode.SF])
+                    destNode.UpdateNeighbor(node.id,node.SFlevel[node.SF])
         
             # take first packet rectime
             yield env.timeout(pack_mat[node.SF][0][1].rectime)
@@ -545,7 +537,7 @@ def transmit2(env:simpy.Environment,node:myNode):
             if node.id != 0:
                 node.cansend = False
             else:
-                yield env.timeout(pack_mat[node.SF][0][1].rectime)*10
+                yield env.timeout(pack_mat[node.SF][0][1].rectime*10)
         else:
             node.cansend = False
 
@@ -591,7 +583,6 @@ env = simpy.Environment()
 packetsAtNode = []
 nrAllNode = nrbs + nrNodes
 
-
 # max distance: 300m in city, 3000 m outside (5 km Utz experiment)
 # also more unit-disc like according to Utz
 nrCollisions = 0
@@ -606,7 +597,7 @@ recPackets=[]
 collidedPackets=[]
 lostPackets = []
 
-Ptx = 23
+Ptx = 23 #original = 14
 gamma = 2.08
 d0 = 40.0
 var = 0           # variance ignored for now
@@ -629,7 +620,7 @@ minsensi = sensi[5,2]
 Lpl = Ptx - minsensi
 print ("amin", minsensi, "Lpl", Lpl)
 #maxDist = d0*(math.e**((Lpl-Lpld0)/(10.0*gamma)))
-maxDist = 200
+maxDist = config.maxDist
 print ("maxDist:", maxDist)
 
 nodes:list[myNode]
@@ -762,30 +753,13 @@ for i in range(0,nrAllNode):
         dist_mat[i][j] = dist_node
         
         for _ in range(7,13,1):
-            packageAtNode = myPacket(nodes[i].id, nodes[i].packetlen, dist_node, j)
+            packageAtNode = myPacket(nodes[i].id, nodes[i].packetlen, dist_node, j,_)
             pack_mat[_][i][j] = packageAtNode
 
             if not packageAtNode.lost:
-                 nodes[i].reached[nodes[i].SF].append(j)
-                 nodes[j].reached[nodes[j].SF].append(i)
+                 nodes[i].reached[_].append(j)
+                 nodes[j].reached[_].append(i)
         
-        #print(f"Dist Node = {dist_node} i = {i} j = {j}")
-#print("***** distatance matrix *****")
-#print(dist_mat)    
-    
-    
-# # *add package to node
-# for i in range(0,nrAllNode):
-#     for j in range(0,nrAllNode):
-#         if i < j:
-#             node_dist = dist_mat[i][j]
-#         elif i == j:
-#             nodes[i].packet.append([])
-#             continue
-#         else:
-#             node_dist = dist_mat[j][i]
-#         addPacket = myPacket(nodes[i].id, nodes[i].packetlen, node_dist, j)
-#         nodes[i].packet.append(addPacket)
 
 
 #prepare show
@@ -815,40 +789,13 @@ print ("nr received packets", len(recPackets))
 print ("nr collided packets", len(collidedPackets))
 print ("nr lost packets", len(lostPackets))
 
-#print "sent packets: ", sent
-#print "sent packets-collisions: ", sent-nrCollisions
-#print "received packets: ", len(recPackets)
-# ! not use
-# for i in range(0,nrbs):
-#     print ("packets at bs",i, ":", len(packetsRecbs[i]))
-# print ("sent packets: ", packetSeq)
 
-# # data extraction rate
-# der = len(recPackets)/float(packetSeq)
-# print ("DER:", der)
-# #der = (nrReceived)/float(sent)
-# #print "DER method 2:", der
 
 # # this can be done to keep graphics visible
 # if (graphics == 1):
 #     sys.stdin.read()
 
-# # save experiment data into a dat file that can be read by e.g. gnuplot
-# # name of file would be:  exp0.dat for experiment 0
-# fname = "exp" + str(experiment) + "bs" + str(nrbs) + ".dat"
-# print (fname)
-# if os.path.isfile(fname):
-#     res = "\n" + str(nrNodes) + " " + str(der)
-# else:
-#     res = "# nrNodes DER\n" + str(nrNodes) + " " + str(der)
-# with open(fname, "a") as myfile:
-#     myfile.write(res)
-# myfile.close()
-
 # plotting using plt.pyplot()
-
-#plt.plot(loX,loY,'bo')
-#plt.plot(gateway.x,gateway.y,'ro')
 
 for i in nodes:
     if i.SFlevel[7] == 0:

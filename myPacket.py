@@ -22,12 +22,12 @@ minsensi = np.amin(sensi)
 # it also sets all parameters, currently random
 #
 class myPacket():
-    def __init__(self, node:myNode, plen, distance, bs):
+    def __init__(self, nodeID, plen, distance, bs,SF):
         # new: base station ID
         self.bs = bs
-        self.nodeid = node.id
+        self.nodeid = nodeID
         # randomize configuration values
-        self.sf = node.SF
+        self.sf = SF
         self.cr = cf.cr_config
         self.bw = cf.bw_config
         
@@ -57,6 +57,20 @@ class myPacket():
         self.processed = 0
         # mark the packet as lost when it's rssi is below the sensitivity
         # don't do this for experiment 3, as it requires a bit more work
+        
+        if self.sf == 7:
+            minsensi = sensi[0,1]
+        elif self.sf == 8:
+            minsensi = sensi[1,1]
+        elif self.sf == 9:
+            minsensi = sensi[2,1]
+        elif self.sf == 10:
+            minsensi = sensi[3,1]
+        elif self.sf == 11:
+            minsensi = sensi[4,1]
+        elif self.sf == 12:
+            minsensi = sensi[5,1]
+        
         # ! note this in paper
         self.lost = self.rssi < minsensi
         
