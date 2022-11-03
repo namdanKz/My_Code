@@ -32,8 +32,10 @@ class myNode():
         self.finished = False
         
         # ! inital layer = 0
-        # self.SFlevel = [[] for _ in range(13)]
-        self.SFlevel = 0
+        self.SFlevel = [[] for _ in range(13)]
+        for i in range(7,13):
+            self.SFlevel[i] = -1
+        #self.SFlevel = 0
         
         self.id = id
         self.period = period

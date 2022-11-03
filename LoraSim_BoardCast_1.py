@@ -479,61 +479,76 @@ def transmit2(env:simpy.Environment,node:myNode):
             continue
         
         yield env.timeout(random.expovariate(1.0/float(node.period)))
-        for reach in node.reached[node.SF]:
-            if node.id == reach:
-                # ! prevent from same node <<< this must be imposible but for sure 
-                continue
-            #destination node
-            destNode:myNode = nodes[reach]
-            # node is reciving packet
-            if destNode.AvailableTime > env.now:
-                # can't send
-                continue
-            if node.id < reach:
-                packet_send:myPacket = pack_mat[node.id][reach]
-            else:
-                packet_send = pack_mat[reach][node.id]
-            if(checkcollision(packet_send)==1):
-                # can't send
-                continue
-            # packet was sent from node to nodes[reach]
-            destNode.AvailableTime = env.now + packet_send.rectime
-            
-            # First recived
-            if not destNode.cansend:
-                destNode.cansend = True
-                destNode.SFlevel = node.SFlevel+1
-                node.nbUpper[node.SF].append(destNode.id)
-                destNode.nbLower[destNode.SF].append(node.id)
-            else:
-                # * Clear all node in list first
-                if destNode.id in node.nbLower[node.SF]:
-                    node.nbLower[node.SF].remove(destNode.id)
-                if destNode.id in node.nbSame[node.SF]:
-                    node.nbSame[node.SF].remove(destNode.id)
-                if destNode.id in node.nbUpper[node.SF]:
-                    node.nbUpper[node.SF].remove(destNode.id)
-                    
-                if node.id in destNode.nbLower[destNode.SF]:
-                    destNode.nbLower[destNode.SF].remove(node.id)
-                if node.id in destNode.nbSame[destNode.SF]:
-                    destNode.nbSame[destNode.SF].remove(node.id)
-                if node.id in destNode.nbUpper[destNode.SF]:
-                    destNode.nbUpper[destNode.SF].remove(node.id)
-
-                if node.SFlevel == destNode.SFlevel:
-                    node.nbSame[node.SF].append(destNode.id)
-                    destNode.nbSame[destNode.SF].append(node.id)
-                elif node.SFlevel < destNode.SFlevel:
-                    node.nbUpper.append(destNode.id)
-                    destNode.nbLower[destNode.SF].append(node.id)
-                    destNode.SFlevel = node.SFlevel+1
+        
+        for i in range(0,10):
+            for reach in node.reached[node.SF]:
+                if node.id == reach:
+                    # ! prevent from same node <<< this must be imposible but for sure 
+                    continue
+                #destination node
+                destNode:myNode = nodes[reach]
+                if node.SF != destNode.SF:
+                    yield env.timeout(random.expovariate(1.0/float(node.period)))
+                    continue
+                # node is reciving packet
+                if destNode.AvailableTime > env.now:
+                    # can't send
+                    continue
+                if node.id < reach:
+                    packet_send:myPacket = pack_mat[node.SF][node.id][destNode.id]
                 else:
-                    node.nbLower[node.id].append(destNode.id)
-                    destNode.nbUpper[destNode.SF].append(node.id)
-                    node.SFlevel = destNode.SFlevel+1
-        # take first packet rectime
-        yield env.timeout(pack_mat[0][1].rectime)
+                    packet_send = pack_mat[destNode.id][node.id]
+                if(checkcollision(packet_send)==1):
+                    # can't send
+                    continue
+                # packet was sent from node to nodes[reach]
+                destNode.AvailableTime = env.now + packet_send.rectime
+
+                # First recived
+                if not destNode.cansend:
+                    destNode.cansend = True
+                    destNode.SFlevel[destNode.SF] = node.SFlevel[node.SF]+1
+                    node.nbUpper[node.SF].append(destNode.id)
+                    destNode.nbLower[destNode.SF].append(node.id)
+                else:
+                    # * Clear all node in list first
+                    if destNode.id in node.nbLower[node.SF]:
+                        node.nbLower[node.SF].remove(destNode.id)
+                    elif destNode.id in node.nbSame[node.SF]:
+                        node.nbSame[node.SF].remove(destNode.id)
+                    elif destNode.id in node.nbUpper[node.SF]:
+                        node.nbUpper[node.SF].remove(destNode.id)
+
+                    if node.id in destNode.nbLower[destNode.SF]:
+                        destNode.nbLower[destNode.SF].remove(node.id)
+                    elif node.id in destNode.nbSame[destNode.SF]:
+                        destNode.nbSame[destNode.SF].remove(node.id)
+                    elif node.id in destNode.nbUpper[destNode.SF]:
+                        destNode.nbUpper[destNode.SF].remove(node.id)
+
+                    if node.SFlevel[node.SF] == destNode.SFlevel[destNode.SF]:
+                        node.nbSame[node.SF].append(destNode.id)
+                        destNode.nbSame[destNode.SF].append(node.id)
+                    elif node.SFlevel[node.SF] < destNode.SFlevel[destNode.SF]:
+                        node.nbUpper.append(destNode.id)
+                        destNode.nbLower[destNode.SF].append(node.id)
+                        destNode.SFlevel[destNode.SF] = node.SFlevel[node.SF]+1
+                    else:
+                        node.nbLower[node.SF].append(destNode.id)
+                        destNode.nbUpper[destNode.SF].append(node.id)
+                        node.SFlevel[node.SF] = destNode.SFlevel[destNode.SF]+1
+        
+            # take first packet rectime
+            yield env.timeout(pack_mat[node.SF][0][1].rectime)
+        if node.SF < 12:
+            node.SF += 1
+            if node.id != 0:
+                node.cansend = False
+            else:
+                yield env.timeout(pack_mat[node.SF][0][1].rectime)*10
+        else:
+            node.cansend = False
+
 
 
 
@@ -614,7 +629,7 @@ minsensi = sensi[5,2]
 Lpl = Ptx - minsensi
 print ("amin", minsensi, "Lpl", Lpl)
 #maxDist = d0*(math.e**((Lpl-Lpld0)/(10.0*gamma)))
-maxDist = 500
+maxDist = 200
 print ("maxDist:", maxDist)
 
 nodes:list[myNode]
@@ -682,6 +697,9 @@ loY = []
 gateway = myNode(0,avgSendTime,20)
 gateway.x = int(maxDist/2.0)
 gateway.y = int(maxDist/2.0)
+gateway.SF = 7
+for i in range(7,13):
+    gateway.SFlevel[i] = 0
 
 # 5*5 = 25 sqr box
 eachPart = int(maxDist/5)
@@ -733,24 +751,27 @@ for i in range(nrbs,nrNodes+nrbs):
 cols = nrAllNode
 rows = nrAllNode
 dist_mat = [[0 for i in range(cols)] for j in range(rows)]
-pack_mat:list[myPacket]= [[0 for i in range(cols)] for j in range(rows)]
+pack_mat:list[myPacket]= [[] for _ in range(13)]
+for i in range(7,13,1):
+    pack_mat[i] = [[0 for i in range(cols)] for j in range(rows)]
+
 for i in range(0,nrAllNode):
     # At i == j it's self (same node) dist = 0 package = null
     for j in range(i+1,nrAllNode):
         dist_node = np.sqrt((nodes[i].x-nodes[j].x)*(nodes[i].x-nodes[j].x)+(nodes[i].y-nodes[j].y)*(nodes[i].y-nodes[j].y))
         dist_mat[i][j] = dist_node
         
+        for _ in range(7,13,1):
+            packageAtNode = myPacket(nodes[i].id, nodes[i].packetlen, dist_node, j)
+            pack_mat[_][i][j] = packageAtNode
+
+            if not packageAtNode.lost:
+                 nodes[i].reached[nodes[i].SF].append(j)
+                 nodes[j].reached[nodes[j].SF].append(i)
         
-        packageAtNode = myPacket(nodes[i].id, nodes[i].packetlen, dist_node, j)
-        pack_mat[i][j] = packageAtNode
-        
-        if not packageAtNode.lost:
-             nodes[i].reached[nodes[i].SF].append(j)
-             nodes[j].reached[nodes[j].SF].append(i)
-        
-        print(f"Dist Node = {dist_node} i = {i} j = {j}")
-print("***** distatance matrix *****")
-print(dist_mat)    
+        #print(f"Dist Node = {dist_node} i = {i} j = {j}")
+#print("***** distatance matrix *****")
+#print(dist_mat)    
     
     
 # # *add package to node
@@ -825,8 +846,25 @@ print ("nr lost packets", len(lostPackets))
 # myfile.close()
 
 # plotting using plt.pyplot()
-plt.plot(loX,loY,'bo')
-plt.plot(gateway.x,gateway.y,'ro')
+
+#plt.plot(loX,loY,'bo')
+#plt.plot(gateway.x,gateway.y,'ro')
+
+for i in nodes:
+    if i.SFlevel[7] == 0:
+        plt.plot(i.x,i.y,'ro')
+    elif i.SFlevel[7] == 1:
+        plt.plot(i.x,i.y,'go')
+    elif i.SFlevel[7] == 2:
+        plt.plot(i.x,i.y,'bo')
+    elif i.SFlevel[7] == 3:
+        plt.plot(i.x,i.y,'yo')
+    elif i.SFlevel[7] == 4:
+        plt.plot(i.x,i.y,'co')
+    elif i.SFlevel[7] == 5:
+        plt.plot(i.x,i.y,'mo')
+    else:
+        plt.plot(i.x,i.y,'ko')
 
 # axis labeling
 plt.xlabel('numbers')
