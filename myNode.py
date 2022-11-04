@@ -28,7 +28,7 @@ class myNode():
         # ! inital layer = 0
         self.SFlevel = [[] for _ in range(13)]
         for i in range(7,13):
-            self.SFlevel[i] = -1
+            self.SFlevel[i] = 99
         #self.SFlevel = 0
         
         self.id = id
@@ -63,6 +63,12 @@ class myNode():
         else:
             self.nbLower[self.SF].append(id)
             self.SFlevel[self.SF] = SfLv+1
-        
         return
-        
+    
+    def SFLevel(self):
+        return self.SFlevel[self.SF]
+    
+    def Reached(self):
+        return self.reached[self.SF]
+    
+

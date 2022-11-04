@@ -493,7 +493,7 @@ def transmit2(env:simpy.Environment,node:myNode):
         yield env.timeout(random.expovariate(1.0/float(node.period)))
         
         for i in range(0,10):
-            for reach in node.reached[node.SF]:
+            for reach in node.Reached():
                 if node.id == reach:
                     # ! prevent from same node <<< this must be imposible but for sure 
                     continue
@@ -503,7 +503,7 @@ def transmit2(env:simpy.Environment,node:myNode):
                     yield env.timeout(random.expovariate(1.0/float(node.period)))
                     continue
                 # node is reciving packet
-                if destNode.AvailableTime > env.now:
+                if destNode.AvailableTime >= env.now:
                     # can't send
                     continue
                 if node.id < destNode.id:
@@ -519,25 +519,18 @@ def transmit2(env:simpy.Environment,node:myNode):
                 # First recived
                 if not destNode.cansend:
                     destNode.cansend = True
-                    destNode.SFlevel[destNode.SF] = node.SFlevel[node.SF]+1
-                    node.nbUpper[node.SF].append(destNode.id)
-                    destNode.nbLower[destNode.SF].append(node.id)
-                else:
-                    # * Clear all node in list first
-                    node.ClearNeighbor(destNode.id)
-                    destNode.ClearNeighbor(node.id)
-
-                    node.UpdateNeighbor(destNode.id,destNode.SFlevel[destNode.SF])
-                    destNode.UpdateNeighbor(node.id,node.SFlevel[node.SF])
+                node.UpdateNeighbor(destNode.id,destNode.SFLevel())
+                destNode.UpdateNeighbor(node.id,node.SFLevel())
         
             # take first packet rectime
             yield env.timeout(pack_mat[node.SF][0][1].rectime)
+            
         if node.SF < 12:
             node.SF += 1
             if node.id != 0:
                 node.cansend = False
             else:
-                yield env.timeout(pack_mat[node.SF][0][1].rectime*10)
+                yield env.timeout(pack_mat[node.SF][0][1].rectime)
         else:
             node.cansend = False
 
@@ -693,7 +686,7 @@ for i in range(7,13):
     gateway.SFlevel[i] = 0
 
 # 5*5 = 25 sqr box
-eachPart = int(maxDist/5)
+eachPart = int(maxDist/8)
 
 # number of node in each box
 
@@ -710,7 +703,6 @@ def genNode():
             #     y = random.randint(j,j+eachPart)
             listLocation.append([x,y])
     return
-
 
 genNode()
 
@@ -797,30 +789,33 @@ print ("nr lost packets", len(lostPackets))
 
 # plotting using plt.pyplot()
 
-for i in nodes:
-    if i.SFlevel[7] == 0:
-        plt.plot(i.x,i.y,'ro')
-    elif i.SFlevel[7] == 1:
-        plt.plot(i.x,i.y,'go')
-    elif i.SFlevel[7] == 2:
-        plt.plot(i.x,i.y,'bo')
-    elif i.SFlevel[7] == 3:
-        plt.plot(i.x,i.y,'yo')
-    elif i.SFlevel[7] == 4:
-        plt.plot(i.x,i.y,'co')
-    elif i.SFlevel[7] == 5:
-        plt.plot(i.x,i.y,'mo')
-    else:
-        plt.plot(i.x,i.y,'ko')
+for j in range(7,13):
+    for i in nodes:
+        if i.SFlevel[j] == 0:
+            plt.plot(i.x,i.y,'ro')
+        elif i.SFlevel[j] == 1:
+            plt.plot(i.x,i.y,'go')
+        elif i.SFlevel[j] == 2:
+            plt.plot(i.x,i.y,'bo')
+        elif i.SFlevel[j] == 3:
+            plt.plot(i.x,i.y,'yo')
+        elif i.SFlevel[j] == 4:
+            plt.plot(i.x,i.y,'co')
+        elif i.SFlevel[j] == 5:
+            plt.plot(i.x,i.y,'mo')
+        else:
+            plt.plot(i.x,i.y,'ko')
+    plt.title(f'SF {j} plot')
+    plt.show()
 
 # axis labeling
-plt.xlabel('numbers')
-plt.ylabel('values')
+#plt.xlabel('numbers')
+#plt.ylabel('values')
 
 # figure name
-plt.title('Dot Plot : Red Dots')
+#plt.title('Dot Plot : Red Dots')
 #plt.figure()
-plt.show()
+
                                                     
 exit(0)
 #below not updated
