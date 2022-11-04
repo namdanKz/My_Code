@@ -17,7 +17,7 @@ cr_config = 1
 bw_config = 125
 
 # width of area of the experiment
-maxDist = 500
+maxDist = 300
 
 Ptx = 23 
 gamma = 2.08

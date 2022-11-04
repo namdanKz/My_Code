@@ -493,6 +493,7 @@ def transmit2(env:simpy.Environment,node:myNode):
         yield env.timeout(random.expovariate(1.0/float(node.period)))
         
         for i in range(0,10):
+            yield env.timeout(random.expovariate(1.0/float(node.period)))
             for reach in node.Reached():
                 if node.id == reach:
                     # ! prevent from same node <<< this must be imposible but for sure 
@@ -686,7 +687,7 @@ for i in range(7,13):
     gateway.SFlevel[i] = 0
 
 # 5*5 = 25 sqr box
-eachPart = int(maxDist/8)
+eachPart = int(maxDist/5)
 
 # number of node in each box
 
