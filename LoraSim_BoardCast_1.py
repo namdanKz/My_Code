@@ -62,7 +62,7 @@ from matplotlib.patches import Rectangle
 from datetime import datetime
 import config
 import matplotlib.pyplot as plt
-#from myPacket import myPacket
+from myPacket import myPacket
 
 
 now = datetime.now()
@@ -72,17 +72,18 @@ dt_string = now.strftime("%b%d_%H%M%S")
 fPacketPkg = f"expPkg{dt_string}.csv"
 fPacketNode = f"expNode{dt_string}.csv"
 #Text for header
-
 NodeSpace = "_"*6
-NodeHeader = f"Node-ID{NodeSpace} X{NodeSpace} Y{NodeSpace}\n"
-with open(fPacketNode, "a") as myfile:
-    myfile.write(NodeHeader)
-myfile.close()
+def createNodeLog():
+    NodeHeader = f"Node-ID{NodeSpace} X{NodeSpace} Y{NodeSpace}\n"
+    with open(fPacketNode, "a") as myfile:
+        myfile.write(NodeHeader)
+    myfile.close()
 
-PacketHeader = f"At{NodeSpace} Node-{NodeSpace} to Node-{NodeSpace}\n"
-with open(fPacketPkg, "a") as myfile:
-    myfile.write(PacketHeader)
-myfile.close()
+def createPkgLog():
+    PacketHeader = f"At{NodeSpace} Node-{NodeSpace} to Node-{NodeSpace}\n"
+    with open(fPacketPkg, "a") as myfile:
+        myfile.write(PacketHeader)
+    myfile.close()
 
 #open(fPacketLog,'w').close()
 #open(fPacketNode,'w').close()
@@ -121,121 +122,121 @@ sf12 = np.array([12,-133.25,-132.25,-132.25])
 # this function creates a packet (associated with a node)
 # it also sets all parameters, currently random
 #
-class myPacket():
-    def __init__(self, nodeid, plen, distance, bs,SF):
-        global experiment
-        global Ptx
-        global gamma
-        global d0
-        global var
-        global Lpld0
-        global GL
+# class myPacket():
+#     def __init__(self, nodeid, plen, distance, bs,SF):
+#         global experiment
+#         global Ptx
+#         global gamma
+#         global d0
+#         global var
+#         global Lpld0
+#         global GL
 
-        # new: base station ID
-        # ! bs = destination node number
-        self.bs = bs
-        self.nodeid = nodeid
-        # randomize configuration values
-        self.sf = random.randint(6,12)
-        self.cr = random.randint(1,4)
-        self.bw = random.choice([125, 250, 500])
+#         # new: base station ID
+#         # ! bs = destination node number
+#         self.bs = bs
+#         self.nodeid = nodeid
+#         # randomize configuration values
+#         self.sf = random.randint(6,12)
+#         self.cr = random.randint(1,4)
+#         self.bw = random.choice([125, 250, 500])
 
-        # for certain experiments override these
-        if experiment==1 or experiment == 0:
-            self.sf = 12
-            self.cr = 4
-            self.bw = 125
+#         # for certain experiments override these
+#         if experiment==1 or experiment == 0:
+#             self.sf = 12
+#             self.cr = 4
+#             self.bw = 125
 
-        # for certain experiments override these
-        if experiment==2:
-            self.sf = 6
-            self.cr = 1
-            self.bw = 500
+#         # for certain experiments override these
+#         if experiment==2:
+#             self.sf = 6
+#             self.cr = 1
+#             self.bw = 500
         
-        # ! Toomtam 
-        self.sf = SF
-        self.cr = 4
-        self.bw = 125
+#         # ! Toomtam 
+#         self.sf = SF
+#         self.cr = 4
+#         self.bw = 125
         
         
-        # for experiment 3 find the best setting
-        # Obs, some hardcoded values
-        Prx = Ptx  ## zero path loss by default
+#         # for experiment 3 find the best setting
+#         # Obs, some hardcoded values
+#         Prx = Ptx  ## zero path loss by default
 
-        # log-shadow
-        Lpl = Lpld0 + 10*gamma*math.log(distance/d0)
-        Prx = Ptx - GL - Lpl
+#         # log-shadow
+#         Lpl = Lpld0 + 10*gamma*math.log(distance/d0)
+#         Prx = Ptx - GL - Lpl
 
-        if (experiment == 3):
-            minairtime = 9999
-            minsf = 0
-            minbw = 0
+#         if (experiment == 3):
+#             minairtime = 9999
+#             minsf = 0
+#             minbw = 0
 
-            for i in range(0,6):
-                for j in range(1,4):
-                    if (sensi[i,j] < Prx):
-                        self.sf = sensi[i,0]
-                        if j==1:
-                            self.bw = 125
-                        elif j==2:
-                            self.bw = 250
-                        else:
-                            self.bw=500
-                        at = airtime(self.sf,4,20,self.bw)
-                        if at < minairtime:
-                            minairtime = at
-                            minsf = self.sf
-                            minbw = self.bw
+#             for i in range(0,6):
+#                 for j in range(1,4):
+#                     if (sensi[i,j] < Prx):
+#                         self.sf = sensi[i,0]
+#                         if j==1:
+#                             self.bw = 125
+#                         elif j==2:
+#                             self.bw = 250
+#                         else:
+#                             self.bw=500
+#                         at = airtime(self.sf,4,20,self.bw)
+#                         if at < minairtime:
+#                             minairtime = at
+#                             minsf = self.sf
+#                             minbw = self.bw
 
-            self.rectime = minairtime
-            self.sf = minsf
-            self.bw = minbw
-            if (minairtime == 9999):
-                print ("does not reach base station")
-                exit(-1)
+#             self.rectime = minairtime
+#             self.sf = minsf
+#             self.bw = minbw
+#             if (minairtime == 9999):
+#                 print ("does not reach base station")
+#                 exit(-1)
         
-        # transmission range, needs update XXX
-        self.transRange = 150
-        self.pl = plen
-        self.symTime = (2.0**self.sf)/self.bw
-        self.arriveTime = 0
-        self.rssi = Prx
-        # frequencies: lower bound + number of 61 Hz steps
-        self.freq = 860000000 + random.randint(0,2622950)
+#         # transmission range, needs update XXX
+#         self.transRange = 150
+#         self.pl = plen
+#         self.symTime = (2.0**self.sf)/self.bw
+#         self.arriveTime = 0
+#         self.rssi = Prx
+#         # frequencies: lower bound + number of 61 Hz steps
+#         self.freq = 860000000 + random.randint(0,2622950)
 
-        # for certain experiments override these and
-        # choose some random frequences
-        if experiment == 1:
-            self.freq = random.choice([860000000, 864000000, 868000000])
-        else:
-            self.freq = 860000000
+#         # for certain experiments override these and
+#         # choose some random frequences
+#         if experiment == 1:
+#             self.freq = random.choice([860000000, 864000000, 868000000])
+#         else:
+#             self.freq = 860000000
         
-        self.rectime = airtime(self.sf,self.cr,self.pl,self.bw)
-        # denote if packet is collided
-        self.collided = 0
-        self.processed = 0
-        # mark the packet as lost when it's rssi is below the sensitivity
-        # don't do this for experiment 3, as it requires a bit more work
-        # ! note this in paper
-        if experiment != 3:
-            global minsensi
-            if self.sf == 7:
-                minsensi = sensi[0,1]
-            elif self.sf == 8:
-                minsensi = sensi[1,1]
-            elif self.sf == 9:
-                minsensi = sensi[2,1]
-            elif self.sf == 10:
-                minsensi = sensi[3,1]
-            elif self.sf == 11:
-                minsensi = sensi[4,1]
-            elif self.sf == 12:
-                minsensi = sensi[5,1]
-            self.lost = self.rssi < minsensi
-            if self.lost:
-                print("node {} bs {} lost {} min{}".format(self.nodeid, self.bs, self.lost,minsensi))
-            else:
-                print("node {} bs {} lost {} min{}".format(self.nodeid, self.bs, self.lost,minsensi))
+#         self.rectime = airtime(self.sf,self.cr,self.pl,self.bw)
+#         # denote if packet is collided
+#         self.collided = 0
+#         self.processed = 0
+#         # mark the packet as lost when it's rssi is below the sensitivity
+#         # don't do this for experiment 3, as it requires a bit more work
+#         # ! note this in paper
+#         if experiment != 3:
+#             global minsensi
+#             if self.sf == 7:
+#                 minsensi = sensi[0,1]
+#             elif self.sf == 8:
+#                 minsensi = sensi[1,1]
+#             elif self.sf == 9:
+#                 minsensi = sensi[2,1]
+#             elif self.sf == 10:
+#                 minsensi = sensi[3,1]
+#             elif self.sf == 11:
+#                 minsensi = sensi[4,1]
+#             elif self.sf == 12:
+#                 minsensi = sensi[5,1]
+#             self.lost = self.rssi < minsensi
+#             if self.lost:
+#                 print("node {} bs {} lost {} min{}".format(self.nodeid, self.bs, self.lost,minsensi))
+#             else:
+#                 print("node {} bs {} lost {} min{}".format(self.nodeid, self.bs, self.lost,minsensi))
 
 #
 # check for collisions at base station
@@ -487,19 +488,23 @@ def transmit(env,node:myNode):
 def transmit2(env:simpy.Environment,node:myNode):
     while True:
         if not node.cansend:
-            yield env.timeout(1)
+            yield env.timeout(100)
             continue
         
         yield env.timeout(random.expovariate(1.0/float(node.period)))
         
-        for i in range(0,10):
+        for i in range(0,30):
             yield env.timeout(random.expovariate(1.0/float(node.period)))
-            for reach in node.Reached():
+            Node_success = []
+            for reach in node.GetReached():
                 if node.id == reach:
                     # ! prevent from same node <<< this must be imposible but for sure 
                     continue
                 #destination node
                 destNode:myNode = nodes[reach]
+                # for check is node already recive packet from this node
+                if node.CheckRecived(destNode.id):
+                    continue
                 if node.SF != destNode.SF:
                     yield env.timeout(random.expovariate(1.0/float(node.period)))
                     continue
@@ -515,27 +520,30 @@ def transmit2(env:simpy.Environment,node:myNode):
                     # can't send
                     continue
                 # packet was sent from node to nodes[reach]
-                destNode.AvailableTime = env.now + packet_send.rectime
+                Node_success.append(reach)
 
-                # First recived
-                if not destNode.cansend:
-                    destNode.cansend = True
-                node.UpdateNeighbor(destNode.id,destNode.SFLevel())
-                destNode.UpdateNeighbor(node.id,node.SFLevel())
         
             # take first packet rectime
             yield env.timeout(pack_mat[node.SF][0][1].rectime)
+            
+            for i in Node_success:
+                destNode:myNode = nodes[i]
+                destNode.AvailableTime = env.now + packet_send.rectime+1
+                # First recived
+                if not destNode.cansend:
+                    destNode.cansend = True
+                node.UpdateNeighbor(destNode.id,destNode.GetSFLevel())
+                destNode.UpdateNeighbor(node.id,node.GetSFLevel())
             
         if node.SF < 12:
             node.SF += 1
             if node.id != 0:
                 node.cansend = False
             else:
-                yield env.timeout(pack_mat[node.SF][0][1].rectime)
+                yield env.timeout(4*random.expovariate(1.0/float(node.period)))
         else:
             node.cansend = False
-
-
+            break
 
 
 
@@ -566,7 +574,6 @@ else:
     print ("usage: ./loraDir nrNodes avgSendTime experimentNr simtime nrbs [full_collision]")
     print ("experiment 0 and 1 use 1 frequency only")
     exit(-1)
-
 
 # global stuff
 nodes = []
@@ -645,19 +652,9 @@ if (graphics == 1):
 # list of base stations
 bs = []
 
-# list of packets at each base station, init with 0 packets
-# packetsAtbs = []
-# packetsRecbs = []
-# for i in range(0,nrbs):
-#     b = mybs(i)
-#     bs.append(b)
-#     packetsAtbs.append([])
-#     packetsRecbs.append([])
-
 # * Copy
 packetsAtNode = []
 packetsRecNode = []
-
 
 # ! ****** Log Method *******
 def LogTxt_Node(node:myNode):
@@ -679,7 +676,7 @@ loX = []
 loY = []
 
 # * Gateway
-gateway = myNode(0,avgSendTime,20)
+gateway = myNode(0,avgSendTime,config.pktLen)
 gateway.x = int(maxDist/2.0)
 gateway.y = int(maxDist/2.0)
 gateway.SF = 7
@@ -687,7 +684,7 @@ for i in range(7,13):
     gateway.SFlevel[i] = 0
 
 # 5*5 = 25 sqr box
-eachPart = int(maxDist/5)
+eachPart = int(maxDist/config.part_config)
 
 # number of node in each box
 
@@ -702,12 +699,14 @@ def genNode():
             # while not [x,y] in listLocation:
             #     x = random.randint(i,i+eachPart)
             #     y = random.randint(j,j+eachPart)
+            while x == gateway.x and y == gateway.y:
+                x = random.randint(i,i+eachPart)
+                y = random.randint(j-eachPart,j)
             listLocation.append([x,y])
     return
 
 genNode()
 
-LogTxt_Node(gateway)
 gateway.cansend = True
 nodes.append(gateway)
 env.process(transmit2(env,gateway))
@@ -718,12 +717,11 @@ packetsRecNode.append([])
 for i in range(nrbs,nrNodes+nrbs):
     # myNode takes period (in ms), base station id packetlen (in Bytes)
     # 1000000 = 16 min
-    node = myNode(i, avgSendTime,20)
+    node = myNode(i, avgSendTime,config.pktLen)
     
     node.x = listLocation[i-1][0]
     node.y = listLocation[i-1][1]
     
-    LogTxt_Node(node)
     nodes.append(node)
     loX.append(node.x)
     loY.append(node.y)
@@ -734,8 +732,8 @@ for i in range(nrbs,nrNodes+nrbs):
 # * Create distance matrix and add packet to node
 cols = nrAllNode
 rows = nrAllNode
-dist_mat = [[0 for i in range(cols)] for j in range(rows)]
-pack_mat:list[myPacket]= [[] for _ in range(13)]
+#dist_mat = [[0 for i in range(cols)] for j in range(rows)]
+pack_mat:list[list[list[myPacket]]]= [[] for _ in range(13)]
 for i in range(7,13,1):
     pack_mat[i] = [[0 for i in range(cols)] for j in range(rows)]
 
@@ -743,7 +741,7 @@ for i in range(0,nrAllNode):
     # At i == j it's self (same node) dist = 0 package = null
     for j in range(i+1,nrAllNode):
         dist_node = np.sqrt((nodes[i].x-nodes[j].x)*(nodes[i].x-nodes[j].x)+(nodes[i].y-nodes[j].y)*(nodes[i].y-nodes[j].y))
-        dist_mat[i][j] = dist_node
+        #dist_mat[i][j] = dist_node
         
         for _ in range(7,13,1):
             packageAtNode = myPacket(nodes[i].id, nodes[i].packetlen, dist_node, j,_)
@@ -753,6 +751,62 @@ for i in range(0,nrAllNode):
                  nodes[i].reached[_].append(j)
                  nodes[j].reached[_].append(i)
         
+#Setup Phase
+for sf in range(7,13):
+    for i in range(0,3):
+        for node in nodes:
+            node.SF = sf
+            if node.id == 0:
+                continue
+            Low = 999
+            for reach in node.GetReached():
+                reachLv = nodes[reach].GetSFLevel()
+                if  reachLv < Low:
+                    Low = reachLv
+            print(f"Node {node.id} SFLevel = {Low+1}")
+            node.UpdateSFLevel(Low+1)
+            
+#Neightbor Phase            
+for sf in range(7,13):
+    #for i in range(0,2):
+        for node in nodes:
+            node.SF = sf
+            for reach in node.GetReached():
+                reachNode = nodes[reach]
+                node.UpdateNeighbor(reachNode.id,reachNode.GetSFLevel())
+                reachNode.UpdateNeighbor(node.id,node.GetSFLevel())
+                                
+def NeighborScore(node1:myNode,node2:myNode):
+    score = 0
+    for i in node1.GetnbSame():
+        if i in node2.GetnbUpper():
+            score += 1
+    return score
+
+
+#Find Parent Phase
+for node in nodes:
+    node.ResetSF()
+    if node.id == 0:
+        continue
+    for reach in node.GetnbLower():
+        if node.GetSFLevel() <= nodes[reach].GetSFLevel():
+            continue
+        if node.parent == -1:
+            node.parent = nodes[reach].id
+            nodes[reach].child.append(node.id)
+            continue
+        oldScore = NeighborScore(node,nodes[node.parent])
+        newScore = NeighborScore(node,nodes[reach])
+        if newScore > oldScore:
+            nodes[node.parent].child.remove(node.id)
+            nodes[reach].child.append(node.id)
+            node.parent = reach
+        
+            
+            
+
+
 
 
 #prepare show
@@ -772,7 +826,7 @@ with open('basestation.txt', 'w') as bfile:
         bfile.write('{x} {y} {id}\n'.format(**vars(basestation)))
         
 # start simulation
-env.run(until=simtime)
+#env.run(until=simtime)
 
 # print stats and save into file
 # print "nrCollisions ", nrCollisions
@@ -790,24 +844,37 @@ print ("nr lost packets", len(lostPackets))
 
 # plotting using plt.pyplot()
 
-for j in range(7,13):
+for j in range(7,8):
     for i in nodes:
+        mark = 7 
+        Line = "solid"
+        if i.parent != -1:
+            plt.plot([i.x,nodes[i.parent].x],[i.y,nodes[i.parent].y],color='r', marker='1', linestyle=Line,linewidth=1, markersize=1)
+        
         if i.SFlevel[j] == 0:
-            plt.plot(i.x,i.y,'ro')
+            plt.plot(i.x,i.y,color='red', marker='o', linestyle='dashed',linewidth=1, markersize=10)
         elif i.SFlevel[j] == 1:
-            plt.plot(i.x,i.y,'go')
+            plt.plot(i.x,i.y,color='green', marker='o', linestyle='dashed',linewidth=1, markersize=mark)
         elif i.SFlevel[j] == 2:
-            plt.plot(i.x,i.y,'bo')
+            plt.plot(i.x,i.y,color='blue', marker='o', linestyle='dashed',linewidth=1, markersize=mark)
         elif i.SFlevel[j] == 3:
-            plt.plot(i.x,i.y,'yo')
+            plt.plot(i.x,i.y,color='yellow', marker='o', linestyle='dashed',linewidth=1, markersize=mark)
         elif i.SFlevel[j] == 4:
-            plt.plot(i.x,i.y,'co')
+            plt.plot(i.x,i.y,color='c', marker='o', linestyle='dashed',linewidth=1, markersize=mark)
         elif i.SFlevel[j] == 5:
-            plt.plot(i.x,i.y,'mo')
+            plt.plot(i.x,i.y,color='m', marker='o', linestyle='dashed',linewidth=1, markersize=mark)
         else:
-            plt.plot(i.x,i.y,'ko')
+            plt.plot(i.x,i.y,color='k', marker='o', linestyle='dashed',linewidth=1, markersize=mark)
+
     plt.title(f'SF {j} plot')
-    plt.show()
+# for i in nodes:
+#     if i.parent != -1:
+#         #plt.plot([i.x,nodes[i.parent].x],[i.y,nodes[i.parent].y],color='red', marker='o', linestyle=Line,linewidth=1, markersize=1)
+#         LengthX = nodes[i.parent].x-i.x
+#         LengthY = nodes[i.parent].y-i.y
+#         plt.arrow(i.x,i.y,LengthX,LengthY, fc="r", ec="r",head_width=5, head_length=5)
+            
+plt.show()
 
 # axis labeling
 #plt.xlabel('numbers')
@@ -817,8 +884,29 @@ for j in range(7,13):
 #plt.title('Dot Plot : Red Dots')
 #plt.figure()
 
-                                                    
 exit(0)
+
+# * Reset all node to SF7
+for node in nodes:
+    node.SF = 7
+    
+# * Find parent for each node
+for node in nodes:
+    if node.id == 0:
+        continue
+    # node in level 1 can connect to lv 0 directly
+    if node.GetSFLevel() == 1:
+        node.parent = 0
+        continue
+    for i in node.GetReached():
+        if nodes[i].GetSFLevel() >= node.GetSFLevel():
+            continue
+        
+
+
+ 
+                                                    
+
 #below not updated
 
 

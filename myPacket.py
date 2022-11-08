@@ -13,7 +13,7 @@ sf10 = np.array([10,-132.75,-130.25,-128.75])
 sf11 = np.array([11,-134.5,-132.75,-128.75])
 sf12 = np.array([12,-133.25,-132.25,-132.25])
 
-sensi = np.array([sf7,sf8,sf9,sf10,sf11,sf12])
+sensi = cf.sensi
 
 minsensi = np.amin(sensi)
 
