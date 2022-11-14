@@ -802,7 +802,43 @@ for node in nodes:
             nodes[node.parent].child.remove(node.id)
             nodes[reach].child.append(node.id)
             node.parent = reach
-        
+
+def GetHop(node:myNode):
+    if len(node.child) == 0:
+        return 1
+    sum = 0
+    for i in node.child:
+        sum = sum + GetHop(nodes[i])
+    if node.id != 0:
+        sum+= 1
+    return sum
+
+
+class P():
+    def __init__(self):
+        self.data = [None] * 13
+        self.SF7 = 0
+        self.SF8 = 0
+        self.SF9 = 0
+        self.SF10 = 0
+        self.SF11 = 0
+        self.SF12 = 0
+    pass
+
+def MyProtocal(node:myNode):
+    x = [None] * 13
+    Hop = GetHop(node)
+    if Hop%2 == 0:
+        Test = 1+Hop/2
+    else:
+        Test = math.ceil(Hop/2)
+    CurrentSF = 7
+    while Test/2 > 0:
+        x[CurrentSF] = Test
+        CurrentSF += 1
+
+print(f"Hop Count = {GetHop(nodes[0])}")
+            
             
             
 
