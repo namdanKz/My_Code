@@ -580,6 +580,8 @@ nodes = []
 packetsAtbs = []
 env = simpy.Environment()
 
+nrNodes = config.part_config**2
+
 # * new
 packetsAtNode = []
 nrAllNode = nrbs + nrNodes
