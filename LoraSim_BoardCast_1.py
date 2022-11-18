@@ -815,34 +815,11 @@ def GetHop(node:myNode):
         sum+= 1
     return sum
 
-
-class P():
-    def __init__(self):
-        self.data = [None] * 13
-        self.SF7 = 0
-        self.SF8 = 0
-        self.SF9 = 0
-        self.SF10 = 0
-        self.SF11 = 0
-        self.SF12 = 0
-    pass
-
-def MyProtocal(node:myNode):
-    x = [None] * 13
-    Hop = GetHop(node)
-    if Hop%2 == 0:
-        Test = 1+Hop/2
-    else:
-        Test = math.ceil(Hop/2)
-    CurrentSF = 7
-    while Test/2 > 0:
-        x[CurrentSF] = Test
-        CurrentSF += 1
-
-print(f"Hop Count = {GetHop(nodes[0])}")
-            
-            
-            
+# * Reset all node to SF7
+for node in nodes:
+    node.SF = 7
+    node.HopCount = GetHop(node)
+    node.GetSlot
 
 
 
@@ -882,51 +859,41 @@ print ("nr lost packets", len(lostPackets))
 
 # plotting using plt.pyplot()
 
-for j in range(7,8):
-    for i in nodes:
-        mark = 7 
-        Line = "solid"
-        if i.parent != -1:
-            plt.plot([i.x,nodes[i.parent].x],[i.y,nodes[i.parent].y],color='r', marker='1', linestyle=Line,linewidth=1, markersize=1)
+# for j in range(7,8):
+#     for i in nodes:
+#         mark = 7 
+#         Line = "solid"
+#         if i.parent != -1:
+#             plt.plot([i.x,nodes[i.parent].x],[i.y,nodes[i.parent].y],color='r', marker='1', linestyle=Line,linewidth=1, markersize=1)
         
-        if i.SFlevel[j] == 0:
-            plt.plot(i.x,i.y,color='red', marker='o', linestyle='dashed',linewidth=1, markersize=10)
-        elif i.SFlevel[j] == 1:
-            plt.plot(i.x,i.y,color='green', marker='o', linestyle='dashed',linewidth=1, markersize=mark)
-        elif i.SFlevel[j] == 2:
-            plt.plot(i.x,i.y,color='blue', marker='o', linestyle='dashed',linewidth=1, markersize=mark)
-        elif i.SFlevel[j] == 3:
-            plt.plot(i.x,i.y,color='yellow', marker='o', linestyle='dashed',linewidth=1, markersize=mark)
-        elif i.SFlevel[j] == 4:
-            plt.plot(i.x,i.y,color='c', marker='o', linestyle='dashed',linewidth=1, markersize=mark)
-        elif i.SFlevel[j] == 5:
-            plt.plot(i.x,i.y,color='m', marker='o', linestyle='dashed',linewidth=1, markersize=mark)
-        else:
-            plt.plot(i.x,i.y,color='k', marker='o', linestyle='dashed',linewidth=1, markersize=mark)
+#         if i.SFlevel[j] == 0:
+#             plt.plot(i.x,i.y,color='red', marker='o', linestyle='dashed',linewidth=1, markersize=10)
+#         elif i.SFlevel[j] == 1:
+#             plt.plot(i.x,i.y,color='green', marker='o', linestyle='dashed',linewidth=1, markersize=mark)
+#         elif i.SFlevel[j] == 2:
+#             plt.plot(i.x,i.y,color='blue', marker='o', linestyle='dashed',linewidth=1, markersize=mark)
+#         elif i.SFlevel[j] == 3:
+#             plt.plot(i.x,i.y,color='yellow', marker='o', linestyle='dashed',linewidth=1, markersize=mark)
+#         elif i.SFlevel[j] == 4:
+#             plt.plot(i.x,i.y,color='c', marker='o', linestyle='dashed',linewidth=1, markersize=mark)
+#         elif i.SFlevel[j] == 5:
+#             plt.plot(i.x,i.y,color='m', marker='o', linestyle='dashed',linewidth=1, markersize=mark)
+#         else:
+#             plt.plot(i.x,i.y,color='k', marker='o', linestyle='dashed',linewidth=1, markersize=mark)
 
-    plt.title(f'SF {j} plot')
-# for i in nodes:
-#     if i.parent != -1:
-#         #plt.plot([i.x,nodes[i.parent].x],[i.y,nodes[i.parent].y],color='red', marker='o', linestyle=Line,linewidth=1, markersize=1)
-#         LengthX = nodes[i.parent].x-i.x
-#         LengthY = nodes[i.parent].y-i.y
-#         plt.arrow(i.x,i.y,LengthX,LengthY, fc="r", ec="r",head_width=5, head_length=5)
+#     plt.title(f'SF {j} plot')
+
             
-plt.show()
+# plt.show()
 
-# axis labeling
-#plt.xlabel('numbers')
-#plt.ylabel('values')
 
-# figure name
-#plt.title('Dot Plot : Red Dots')
-#plt.figure()
+
+
+
 
 exit(0)
 
-# * Reset all node to SF7
-for node in nodes:
-    node.SF = 7
+
     
 # * Find parent for each node
 for node in nodes:

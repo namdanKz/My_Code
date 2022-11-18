@@ -1,3 +1,5 @@
+import math
+
 class myNode():
     def __init__(self, id, period, packetlen):
         # initail sf is 7
@@ -44,6 +46,9 @@ class myNode():
         self.child = []
         
         self.sent = 0
+        
+        self.SFSlot = []
+        self.HopCount = 0
         
     def ClearNeighbor(self,id):
         if id in self.nbLower[self.SF]:
@@ -98,5 +103,26 @@ class myNode():
     
     def GetnbUpper(self):
         return self.nbSame[self.SF]
+    
+    
+    #Hopcount from main file
+    def GetSlot(self):
+        self.SFSlot = [0] * 13
+        Hop = self.HopCount
+        while True:
+            if Hop == 0:
+                break
+            for i in range(7,13):
+                added = math.ceil(Hop/2) # Ceiling for Last hop
+                if i == 7:
+                    self.SFSlot[i] += added
+                else:
+                    while (self.SFSlot[i]+added)*2 > self.SFSlot[i-1]:
+                        added -= 1 
+                    if added == 0: # Not sure
+                        break
+                    self.SFSlot[i] += added
+                Hop -= added
+
     
 

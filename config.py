@@ -25,8 +25,8 @@ cr_config = 1
 bw_config = 125
 
 # width of area of the experiment
-maxDist = 400
-part_config = 8
+maxDist = 250
+part_config = 7
 
 pktLen = 5
 
