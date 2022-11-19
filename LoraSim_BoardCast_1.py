@@ -819,7 +819,29 @@ def GetHop(node:myNode):
 for node in nodes:
     node.SF = 7
     node.HopCount = GetHop(node)
-    node.GetSlot
+    node.GetSlot()
+
+def MyProtocol(node:myNode):
+    for ch in node.child:
+        childNode = nodes[ch]
+        MyProtocol(childNode)
+        for sf in range(8,13):
+            if 0 in childNode.reached[sf]:
+                if childNode.HopCount <= node.SFSlot[sf]:
+                    ChangeAllSF(childNode,sf)
+                    childNode.parent = 0
+                    node.SFSlot[sf] -= childNode.HopCount
+
+def ChangeAllSF(node:myNode,SF):
+    node.SF = SF
+    if len(node.child) == 0:
+        return
+    for ch in node.child:
+        ChangeAllSF(nodes[ch],SF)
+
+
+
+#MyProtocol(nodes[0])
 
 
 
@@ -865,7 +887,6 @@ print ("nr lost packets", len(lostPackets))
 #         Line = "solid"
 #         if i.parent != -1:
 #             plt.plot([i.x,nodes[i.parent].x],[i.y,nodes[i.parent].y],color='r', marker='1', linestyle=Line,linewidth=1, markersize=1)
-        
 #         if i.SFlevel[j] == 0:
 #             plt.plot(i.x,i.y,color='red', marker='o', linestyle='dashed',linewidth=1, markersize=10)
 #         elif i.SFlevel[j] == 1:
@@ -886,10 +907,68 @@ print ("nr lost packets", len(lostPackets))
             
 # plt.show()
 
+for i in nodes:
+    mark = 7 
+    Line = "solid"
+    color = ''
+    if i.SF == 7:
+        color = 'red'
+    elif i.SF == 8:
+        color='green'
+    elif i.SF == 9:
+        color = 'blue'
+    elif i.SF == 10:
+        color = 'yellow'
+    elif i.SF == 11:
+        color = 'c'
+    else:
+        color = 'm'
+    if i.parent != -1:
+        plt.plot([i.x,nodes[i.parent].x],[i.y,nodes[i.parent].y],color, marker='1', linestyle=Line,linewidth=1, markersize=1)
+        
+    plt.plot(i.x,i.y,color, marker='o', linestyle='dashed',linewidth=1, markersize=mark)    
+
+plt.show()
+
+for i in nodes[0].child:
+    MyProtocol(nodes[i]) 
+# MyProtocol(nodes[0]) 
+   
+   
+for i in nodes:
+    mark = 7 
+    Line = "solid"
+    color = ''
+    if i.SF == 7:
+        color = 'red'
+    elif i.SF == 8:
+        color='green'
+    elif i.SF == 9:
+        color = 'blue'
+    elif i.SF == 10:
+        color = 'yellow'
+    elif i.SF == 11:
+        color = 'c'
+    else:
+        color = 'm'
+    if i.parent != -1:
+        plt.plot([i.x,nodes[i.parent].x],[i.y,nodes[i.parent].y],color, marker='1', linestyle=Line,linewidth=1, markersize=1)
+        
+    plt.plot(i.x,i.y,color, marker='o', linestyle='dashed',linewidth=1, markersize=mark)    
+
+plt.show()
+
+SumList = [0]*13
+SumList[7]= sum(1 for i in nodes if i.id != 1 and i.SF == 7)
+SumList[8]= sum(1 for i in nodes if i.id != 1 and i.SF == 8)
+SumList[9]= sum(1 for i in nodes if i.id != 1 and i.SF == 9)
+SumList[10] = sum(1 for i in nodes if i.id != 1 and i.SF == 10)
+SumList[11] = sum(1 for i in nodes if i.id != 1 and i.SF == 11)
+SumList[12] = sum(1 for i in nodes if i.id != 1 and i.SF == 12)
 
 
-
-
+for i in range(7,13):
+    print(f"Sum node SF{i} = {SumList[i]}")
 
 exit(0)
 

@@ -27,5 +27,6 @@ def MyProtocal(Hopcount):
     print(f"% = {100*(x[7]/Hopcount):.2f}")
 
 print("Start")
-for i in range(5000000,5000100):
+for i in range(144,145):
     MyProtocal(i)
+

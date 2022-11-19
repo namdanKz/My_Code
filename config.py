@@ -25,12 +25,12 @@ cr_config = 1
 bw_config = 125
 
 # width of area of the experiment
-maxDist = 250
-part_config = 7
+maxDist = 150
+part_config = 10
 
-pktLen = 5
+pktLen = 1
 
-Ptx = 23 
+Ptx = 14 
 gamma = 2.08
 d0 = 40.0
 var = 0           # variance ignored for now
