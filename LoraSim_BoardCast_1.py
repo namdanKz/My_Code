@@ -754,6 +754,7 @@ for i in range(0,nrAllNode):
                  nodes[j].reached[_].append(i)
         
 #Setup Phase
+print("Setup Phase")
 for sf in range(7,13):
     for i in range(0,3):
         for node in nodes:
@@ -765,7 +766,6 @@ for sf in range(7,13):
                 reachLv = nodes[reach].GetSFLevel()
                 if  reachLv < Low:
                     Low = reachLv
-            print(f"Node {node.id} SFLevel = {Low+1}")
             node.UpdateSFLevel(Low+1)
             
 #Neightbor Phase            
@@ -844,8 +844,6 @@ def ChangeAllSF(node:myNode,SF):
 #MyProtocol(nodes[0])
 
 
-
-
 #prepare show
 if (graphics == 1):
     plt.xlim([0, xmax])
@@ -869,9 +867,9 @@ with open('basestation.txt', 'w') as bfile:
 # print "nrCollisions ", nrCollisions
 # print list of received packets
 #print recPackets
-print ("nr received packets", len(recPackets))
-print ("nr collided packets", len(collidedPackets))
-print ("nr lost packets", len(lostPackets))
+# print ("nr received packets", len(recPackets))
+# print ("nr collided packets", len(collidedPackets))
+# print ("nr lost packets", len(lostPackets))
 
 
 
@@ -930,9 +928,12 @@ for i in nodes:
 
 plt.show()
 
-for i in nodes[0].child:
-    MyProtocol(nodes[i]) 
-# MyProtocol(nodes[0]) 
+
+if config.ProtocolMode == 1:
+    for i in nodes[0].child:
+        MyProtocol(nodes[i]) 
+elif config.ProtocolMode == 2:
+    MyProtocol(nodes[0]) 
    
    
 for i in nodes:
@@ -959,12 +960,12 @@ for i in nodes:
 plt.show()
 
 SumList = [0]*13
-SumList[7]= sum(1 for i in nodes if i.id != 1 and i.SF == 7)
-SumList[8]= sum(1 for i in nodes if i.id != 1 and i.SF == 8)
-SumList[9]= sum(1 for i in nodes if i.id != 1 and i.SF == 9)
-SumList[10] = sum(1 for i in nodes if i.id != 1 and i.SF == 10)
-SumList[11] = sum(1 for i in nodes if i.id != 1 and i.SF == 11)
-SumList[12] = sum(1 for i in nodes if i.id != 1 and i.SF == 12)
+SumList[7]= sum(1 for i in nodes if i.id != 0 and i.SF == 7)
+SumList[8]= sum(1 for i in nodes if i.id != 0 and i.SF == 8)
+SumList[9]= sum(1 for i in nodes if i.id != 0 and i.SF == 9)
+SumList[10] = sum(1 for i in nodes if i.id != 0 and i.SF == 10)
+SumList[11] = sum(1 for i in nodes if i.id != 0 and i.SF == 11)
+SumList[12] = sum(1 for i in nodes if i.id != 0 and i.SF == 12)
 
 
 for i in range(7,13):

@@ -37,7 +37,6 @@ class myPacket():
 
         # log-shadow
         Lpl = cf.Lpld0 + 10*cf.gamma*math.log(distance/cf.d0)
-        print (Lpl)
         Prx = cf.Ptx - cf.GL - Lpl
         
         # transmission range, needs update XXX
