@@ -821,6 +821,13 @@ for node in nodes:
     node.HopCount = GetHop(node)
     node.GetSlot()
 
+def ChangeAllSF(node:myNode,SF):
+    node.SF = SF
+    if len(node.child) == 0:
+        return
+    for ch in node.child:
+        ChangeAllSF(nodes[ch],SF)
+
 def MyProtocol(node:myNode):
     for ch in node.child:
         childNode = nodes[ch]
@@ -832,12 +839,22 @@ def MyProtocol(node:myNode):
                     childNode.parent = 0
                     node.SFSlot[sf] -= childNode.HopCount
 
-def ChangeAllSF(node:myNode,SF):
-    node.SF = SF
-    if len(node.child) == 0:
-        return
+def MyProtocol2(node:myNode):
     for ch in node.child:
-        ChangeAllSF(nodes[ch],SF)
+        childNode = nodes[ch]
+        MyProtocol(childNode)
+        for sf in range(8,13):
+            if childNode.HopCount <= node.SFSlot[sf]:
+                for ch2 in childNode.reached[sf]:
+                    childNode2 = nodes[ch2]
+                    if childNode2.SF == sf and childNode2.id in childNode.nbLower[sf]:
+                        ChangeAllSF(childNode,sf)
+                        childNode.parent = childNode2.id
+                        node.SFSlot[sf] -= childNode.HopCount
+
+
+
+
 
 
 
@@ -905,71 +922,65 @@ with open('basestation.txt', 'w') as bfile:
             
 # plt.show()
 
-for i in nodes:
-    mark = 7 
-    Line = "solid"
-    color = ''
-    if i.SF == 7:
-        color = 'red'
-    elif i.SF == 8:
-        color='green'
-    elif i.SF == 9:
-        color = 'blue'
-    elif i.SF == 10:
-        color = 'yellow'
-    elif i.SF == 11:
-        color = 'c'
-    else:
-        color = 'm'
-    if i.parent != -1:
-        plt.plot([i.x,nodes[i.parent].x],[i.y,nodes[i.parent].y],color, marker='1', linestyle=Line,linewidth=1, markersize=1)
-        
-    plt.plot(i.x,i.y,color, marker='o', linestyle='dashed',linewidth=1, markersize=mark)    
 
-plt.show()
+def showMap():
+    for i in nodes:
+        mark = 7 
+        Line = "solid"
+        color = ''
+        if i.SF == 7:
+            color = 'red'
+        elif i.SF == 8:
+            color='green'
+        elif i.SF == 9:
+            color = 'blue'
+        elif i.SF == 10:
+            color = 'yellow'
+        elif i.SF == 11:
+            color = 'c'
+        else:
+            color = 'm'
+        if i.parent != -1:
+            plt.plot([i.x,nodes[i.parent].x],[i.y,nodes[i.parent].y],color, marker='1', linestyle=Line,linewidth=1, markersize=1)
 
+        plt.plot(i.x,i.y,color, marker='o', linestyle='dashed',linewidth=1, markersize=mark)    
+
+    plt.show()
+    
+SumList = [0]*13
+def PrintSF():
+    global SumList
+    SumList = [0]*13
+    SumList[7]= sum(1 for i in nodes if i.id != 0 and i.SF == 7)
+    SumList[8]= sum(1 for i in nodes if i.id != 0 and i.SF == 8)
+    SumList[9]= sum(1 for i in nodes if i.id != 0 and i.SF == 9)
+    SumList[10] = sum(1 for i in nodes if i.id != 0 and i.SF == 10)
+    SumList[11] = sum(1 for i in nodes if i.id != 0 and i.SF == 11)
+    SumList[12] = sum(1 for i in nodes if i.id != 0 and i.SF == 12)
+    for i in range(7,13):
+        print(f"Sum node SF{i} = {SumList[i]}")
+
+showMap()
 
 if config.ProtocolMode == 1:
     for i in nodes[0].child:
         MyProtocol(nodes[i]) 
 elif config.ProtocolMode == 2:
     MyProtocol(nodes[0]) 
-   
-   
-for i in nodes:
-    mark = 7 
-    Line = "solid"
-    color = ''
-    if i.SF == 7:
-        color = 'red'
-    elif i.SF == 8:
-        color='green'
-    elif i.SF == 9:
-        color = 'blue'
-    elif i.SF == 10:
-        color = 'yellow'
-    elif i.SF == 11:
-        color = 'c'
-    else:
-        color = 'm'
-    if i.parent != -1:
-        plt.plot([i.x,nodes[i.parent].x],[i.y,nodes[i.parent].y],color, marker='1', linestyle=Line,linewidth=1, markersize=1)
-        
-    plt.plot(i.x,i.y,color, marker='o', linestyle='dashed',linewidth=1, markersize=mark)    
+print("Protocol 1")
+PrintSF()
+showMap()
 
-plt.show()
-
-SumList = [0]*13
-SumList[7]= sum(1 for i in nodes if i.id != 0 and i.SF == 7)
-SumList[8]= sum(1 for i in nodes if i.id != 0 and i.SF == 8)
-SumList[9]= sum(1 for i in nodes if i.id != 0 and i.SF == 9)
-SumList[10] = sum(1 for i in nodes if i.id != 0 and i.SF == 10)
-SumList[11] = sum(1 for i in nodes if i.id != 0 and i.SF == 11)
-SumList[12] = sum(1 for i in nodes if i.id != 0 and i.SF == 12)
+print("Protocol 2")
+for i in nodes[0].child:
+    MyProtocol2(nodes[i]) 
+PrintSF()
+showMap()
 
 
-for i in range(7,13):
-    print(f"Sum node SF{i} = {SumList[i]}")
+
+
+
 
 exit(0)
 

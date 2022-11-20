@@ -25,8 +25,8 @@ cr_config = 1
 bw_config = 125
 
 # width of area of the experiment
-maxDist = 200
-part_config = 10
+maxDist = 250
+part_config = 15
 
 
 ProtocolMode = 2
