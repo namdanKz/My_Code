@@ -676,14 +676,19 @@ def LogTxt_Pkg(time,send,to,result):
 
 loX = []
 loY = []
-
-# * Gateway
-gateway = myNode(0,avgSendTime,config.pktLen)
-gateway.x = int(maxDist/2.0)
-gateway.y = int(maxDist/2.0)
-gateway.SF = 7
-for i in range(7,13):
-    gateway.SFlevel[i] = 0
+nodes = []
+def CreateGateway():
+    # * Gateway
+    global nodes
+    gateway = myNode(0,avgSendTime,config.pktLen)
+    gateway.x = int(maxDist/2.0)
+    gateway.y = int(maxDist/2.0)
+    gateway.SF = 7
+    gateway.cansend = True
+    for i in range(7,13):
+        gateway.SFlevel[i] = 0
+    nodes.append(gateway)
+    env.process(transmit2(env,gateway))
 
 # 5*5 = 25 sqr box
 eachPart = int(maxDist/config.part_config)
@@ -693,6 +698,9 @@ eachPart = int(maxDist/config.part_config)
 listLocation = []
 # ! Generate node location function
 def genNode():
+    global nodes
+    nodes = []
+    CreateGateway()
     for i in range(0,maxDist+1,eachPart):
         tempLocation = []
         for j in range(0,maxDist+1,eachPart):
@@ -701,35 +709,32 @@ def genNode():
             # while not [x,y] in listLocation:
             #     x = random.randint(i,i+eachPart)
             #     y = random.randint(j,j+eachPart)
-            while x == gateway.x and y == gateway.y:
+            while x == nodes[0].x and y == nodes[0].y:
                 x = random.randint(i,i+eachPart)
                 y = random.randint(j-eachPart,j)
             listLocation.append([x,y])
+    # * node id is next to base station
+    for i in range(nrbs,nrNodes+nrbs):
+        # myNode takes period (in ms), base station id packetlen (in Bytes)
+        # 1000000 = 16 min
+        node = myNode(i, avgSendTime,config.pktLen)
+
+        node.x = listLocation[i-1][0]
+        node.y = listLocation[i-1][1]
+
+        nodes.append(node)
+        loX.append(node.x)
+        loY.append(node.y)
+        packetsAtNode.append([])
+        packetsRecNode.append([])
+        env.process(transmit2(env,node))
     return
 
 genNode()
 
-gateway.cansend = True
-nodes.append(gateway)
-env.process(transmit2(env,gateway))
 packetsAtNode.append([])
 packetsRecNode.append([])
 
-# * node id is next to base station
-for i in range(nrbs,nrNodes+nrbs):
-    # myNode takes period (in ms), base station id packetlen (in Bytes)
-    # 1000000 = 16 min
-    node = myNode(i, avgSendTime,config.pktLen)
-    
-    node.x = listLocation[i-1][0]
-    node.y = listLocation[i-1][1]
-    
-    nodes.append(node)
-    loX.append(node.x)
-    loY.append(node.y)
-    packetsAtNode.append([])
-    packetsRecNode.append([])
-    env.process(transmit2(env,node))
 
 # * Create distance matrix and add packet to node
 cols = nrAllNode
@@ -785,10 +790,26 @@ def NeighborScore(node1:myNode,node2:myNode):
             score += 1
     return score
 
+def FindNeighbor(node1:myNode,nodeCmp1:myNode,nodeCmp2:myNode):
+    if NeighborScore(node1,nodeCmp1) > NeighborScore(node1,nodeCmp2):
+        return nodeCmp1.id
+    elif NeighborScore(node1,nodeCmp1) == NeighborScore(node1,nodeCmp2):
+        if node1.SF == 12:
+            return nodeCmp1.id
+        node1.IncreaseSF()
+        nodeCmp1.IncreaseSF()
+        nodeCmp2.IncreaseSF()
+        FindNeighbor(node1,nodeCmp1,nodeCmp2)
+    else:
+        return nodeCmp2.id
 
+
+def ResetAllNodeSF():
+    for node in nodes:
+        node.ResetSF()
+ResetAllNodeSF()
 #Find Parent Phase
 for node in nodes:
-    node.ResetSF()
     if node.id == 0:
         continue
     for reach in node.GetnbLower():
@@ -804,7 +825,8 @@ for node in nodes:
             nodes[node.parent].child.remove(node.id)
             nodes[reach].child.append(node.id)
             node.parent = reach
-
+            
+        
 def GetHop(node:myNode):
     if len(node.child) == 0:
         return 1
@@ -851,11 +873,6 @@ def MyProtocol2(node:myNode):
                         ChangeAllSF(childNode,sf)
                         childNode.parent = childNode2.id
                         node.SFSlot[sf] -= childNode.HopCount
-
-
-
-
-
 
 
 #MyProtocol(nodes[0])
