@@ -837,6 +837,9 @@ def GetHop(node:myNode):
         sum+= 1
     return sum
 
+def GetTrasmission():
+    pass
+
 # * Reset all node to SF7
 for node in nodes:
     node.SF = 7

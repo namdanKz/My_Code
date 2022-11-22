@@ -26,6 +26,9 @@ def MyProtocal(Hopcount):
     print(f"Sum = {sum(x)} ",end="")
     print(f"% = {100*(x[7]/Hopcount):.2f}")
 
+
+
+
 print("Start")
 for i in range(144,145):
     MyProtocal(i)
