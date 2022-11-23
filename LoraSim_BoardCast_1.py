@@ -837,14 +837,25 @@ def GetHop(node:myNode):
         sum+= 1
     return sum
 
-def GetTrasmission():
-    pass
+def GetTranmission(node:myNode):
+    if len(node.child) == 0:
+        return 1
+    sum = 0
+    for i in node.child:
+        sum = sum + GetTranmission(nodes[i])
+    if node.id != 0:
+        sum+= node.HopCount
+    return sum
 
 # * Reset all node to SF7
 for node in nodes:
     node.SF = 7
     node.HopCount = GetHop(node)
     node.GetSlot()
+
+for node in nodes:
+    node.Transmission = GetTranmission(node)
+
 
 def ChangeAllSF(node:myNode,SF):
     node.SF = SF
@@ -996,10 +1007,6 @@ for i in nodes[0].child:
     MyProtocol2(nodes[i]) 
 PrintSF()
 showMap()
-
-
-
-
 
 
 exit(0)

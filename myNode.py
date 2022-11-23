@@ -49,6 +49,7 @@ class myNode():
         
         self.SFSlot = []
         self.HopCount = 0
+        self.Transmission = 0
         
     def ClearNeighbor(self,id):
         if id in self.nbLower[self.SF]:
