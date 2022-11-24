@@ -782,11 +782,25 @@ for sf in range(7,13):
                 reachNode = nodes[reach]
                 node.UpdateNeighbor(reachNode.id,reachNode.GetSFLevel())
                 reachNode.UpdateNeighbor(node.id,node.GetSFLevel())
+                
                                 
 def NeighborScore(node1:myNode,node2:myNode):
+    """ เทียบระหว่าง 2 node ว่ามี node ใกล้เคียง (Neighbor) 
+    เหมือนกันอยู่เท่าไหร่
+
+    Args:
+        node1 (myNode): node ต้นทาง
+        node2 (myNode): node ปลายทางที่จะหาคะแนน
+
+    Returns:
+        score (int): ผลลัพธ์ node ที่เหมือนกัน
+    """
     score = 0
     for i in node1.GetnbSame():
         if i in node2.GetnbUpper():
+            score += 1
+    for i in node1.GetnbLower():
+        if i in node2.GetnbSame():
             score += 1
     return score
 
@@ -809,6 +823,7 @@ def ResetAllNodeSF():
         node.ResetSF()
 ResetAllNodeSF()
 #Find Parent Phase
+
 for node in nodes:
     if node.id == 0:
         continue
@@ -851,10 +866,11 @@ def GetTranmission(node:myNode):
 for node in nodes:
     node.SF = 7
     node.HopCount = GetHop(node)
-    node.GetSlot()
+    #node.GetSlot()
 
 for node in nodes:
     node.Transmission = GetTranmission(node)
+    node.GetSlot()
 
 
 def ChangeAllSF(node:myNode,SF):
@@ -890,7 +906,6 @@ def MyProtocol2(node:myNode):
 
 
 #MyProtocol(nodes[0])
-
 
 #prepare show
 if (graphics == 1):

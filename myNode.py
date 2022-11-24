@@ -1,5 +1,13 @@
 import math
 
+Myconst = [0]*13
+Myconst[7] = 32/63
+Myconst[8] = 16/63
+Myconst[9] = 8/63
+Myconst[10] = 4/63
+Myconst[11] = 2/63
+Myconst[12] = 1/63
+
 class myNode():
     def __init__(self, id, period, packetlen):
         # initail sf is 7
@@ -107,23 +115,44 @@ class myNode():
     
     
     #Hopcount from main file
-    def GetSlot(self):
-        self.SFSlot = [0] * 13
-        Hop = self.HopCount
-        while True:
-            if Hop == 0:
-                break
-            for i in range(7,13):
-                added = math.ceil(Hop/2) # Ceiling for Last hop
-                if i == 7:
-                    self.SFSlot[i] += added
-                else:
-                    while (self.SFSlot[i]+added)*2 > self.SFSlot[i-1]:
-                        added -= 1 
-                    if added == 0: # Not sure
-                        break
-                    self.SFSlot[i] += added
-                Hop -= added
+    # def GetSlot(self):
+    #     self.SFSlot = [0] * 13
+    #     Hop = self.HopCount
+    #     while True:
+    #         if Hop == 0:
+    #             break
+    #         for i in range(7,13):
+    #             added = math.ceil(Hop/2) # Ceiling for Last hop
+    #             if i == 7:
+    #                 self.SFSlot[i] += added
+    #             else:
+    #                 while (self.SFSlot[i]+added)*2 > self.SFSlot[i-1]:
+    #                     added -= 1 
+    #                 if added == 0: # Not sure
+    #                     break
+    #                 self.SFSlot[i] += added
+    #             Hop -= added
 
+    def GetSlot(self):
+        """ 
+        new function
+        use const from model
+        """
+        self.SFSlot = [0] * 13
+        Trans = self.Transmission
+        for i in range(7,13):
+            add = math.ceil(self.Transmission*Myconst[i])
+            while True:
+                if add*2 > self.SFSlot[i-1] and i != 7:
+                    add -= 1
+                    continue
+                break
+            self.SFSlot[i] += add
+            Trans -= add
+            if Trans == 0:
+                break
+        if Trans != 0:
+            self.SFSlot[7] += Trans
+    
     
 
