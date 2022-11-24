@@ -1,20 +1,14 @@
-def foreach(data):
-    for i in data:
-        print(i)
-
 def addScore(team,score):
     for i in range(len(teamList)):
         if team == teamList[i]:
             scoreList[i] += score
 
-data,matchList,resultList,teamList,scoreList,sortData = [],[],[],[],[],[] 
+data,dataInput,matchList,resultList,teamList,scoreList,sortData = [],[],[],[],[],[],[] 
 
 while True:
     fName = input("Enter a file name: ")
-    fName = "data.txt"
-    dataInput = []
     try:
-        dataInput = open(f"My_Code\\{fName}").read().splitlines()
+        dataInput = open(fName).read().splitlines()
     except EnvironmentError:
         print("File doesn't exits")
         continue
@@ -29,11 +23,13 @@ while True:
 for i in range(1,len(data)):
     matchList.append([data[i][2],data[i][3]])
     resultList.append(data[i][4].split('-'))
+    
 for i in matchList:
     if i[0] in teamList:
         continue
     teamList.append(i[0])
 teamList.sort()
+
 scoreList = [0]*len(teamList)
 resultList = [[int(score[0]),int(score[1])] for score in resultList]
 
@@ -54,6 +50,7 @@ for i in range(len(data)):
 while True:
     menu = input("(d)ata, (t)eam, (s)core: ")
     if not menu.lower() in ['d','t','s']:
+        print("Menu doesn't exits")
         continue
     if menu == 'd':
         print("+-----+-----+----+----+------+")
