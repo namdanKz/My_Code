@@ -866,7 +866,6 @@ def GetTranmission(node:myNode):
 for node in nodes:
     node.SF = 7
     node.HopCount = GetHop(node)
-    #node.GetSlot()
 
 for node in nodes:
     node.Transmission = GetTranmission(node)
@@ -883,27 +882,42 @@ def ChangeAllSF(node:myNode,SF):
 def MyProtocol(node:myNode):
     for ch in node.child:
         childNode = nodes[ch]
-        MyProtocol(childNode)
         for sf in range(8,13):
             if 0 in childNode.reached[sf]:
-                if childNode.HopCount <= node.SFSlot[sf]:
+                if childNode.Transmission <= node.SFSlot[sf]:
                     ChangeAllSF(childNode,sf)
+                    nodes[0].child.append(childNode.id)
+                    node.child.remove(ch)
+
                     childNode.parent = 0
-                    node.SFSlot[sf] -= childNode.HopCount
+                    node.SFSlot[sf] -= childNode.Transmission
+                    break
+                
+        MyProtocol(childNode)
 
 def MyProtocol2(node:myNode):
     for ch in node.child:
         childNode = nodes[ch]
-        MyProtocol(childNode)
+        
         for sf in range(8,13):
-            if childNode.HopCount <= node.SFSlot[sf]:
-                for ch2 in childNode.reached[sf]:
-                    childNode2 = nodes[ch2]
-                    if childNode2.SF == sf and childNode2.id in childNode.nbLower[sf]:
+            if childNode.Transmission <= node.SFSlot[sf]:
+                for nb in childNode.nbLower[sf]:
+                    childNode2 = nodes[nb]
+                    if childNode2.SF == sf:
+                    #if childNode2.SF == sf and childNode2.SFSlot[sf] >= childNode.Transmission:
                         ChangeAllSF(childNode,sf)
-                        childNode.parent = childNode2.id
-                        node.SFSlot[sf] -= childNode.HopCount
+                        childNode2.child.append(childNode.id)
+                        
+                        node.child.remove(ch)
 
+                        childNode.parent = childNode2.id
+                        node.SFSlot[sf] -= childNode.Transmission
+                        break
+            if not ch in node.child:
+                break
+                    
+        MyProtocol(childNode)
+        
 
 #MyProtocol(nodes[0])
 
@@ -970,6 +984,8 @@ with open('basestation.txt', 'w') as bfile:
 
 
 def showMap():
+    if config.ShowMode:
+        return
     for i in nodes:
         mark = 7 
         Line = "solid"
@@ -997,22 +1013,32 @@ SumList = [0]*13
 def PrintSF():
     global SumList
     SumList = [0]*13
-    SumList[7]= sum(1 for i in nodes if i.id != 0 and i.SF == 7)
-    SumList[8]= sum(1 for i in nodes if i.id != 0 and i.SF == 8)
-    SumList[9]= sum(1 for i in nodes if i.id != 0 and i.SF == 9)
-    SumList[10] = sum(1 for i in nodes if i.id != 0 and i.SF == 10)
-    SumList[11] = sum(1 for i in nodes if i.id != 0 and i.SF == 11)
-    SumList[12] = sum(1 for i in nodes if i.id != 0 and i.SF == 12)
+    #SumList[7]= sum(1 for i in nodes if i.id != 0 and i.SF == 7)
+    SumList[7]= sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 7)
+    SumList[8]= sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 8)
+    SumList[9]= sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 9)
+    SumList[10]= sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 10)
+    SumList[11]= sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 11)
+    SumList[12]= sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 12)
     for i in range(7,13):
         print(f"Sum node SF{i} = {SumList[i]}")
 
+
+PrintSF()
 showMap()
+
 
 if config.ProtocolMode == 1:
     for i in nodes[0].child:
         MyProtocol(nodes[i]) 
 elif config.ProtocolMode == 2:
     MyProtocol(nodes[0]) 
+for node in nodes:
+    node.HopCount = GetHop(node)
+
+for node in nodes:
+    node.Transmission = GetTranmission(node)
+    node.GetSlot()
 print("Protocol 1")
 PrintSF()
 showMap()
@@ -1020,8 +1046,41 @@ showMap()
 print("Protocol 2")
 for i in nodes[0].child:
     MyProtocol2(nodes[i]) 
+for node in nodes:
+    node.HopCount = GetHop(node)
+
+for node in nodes:
+    node.Transmission = GetTranmission(node)
+    node.GetSlot()
 PrintSF()
 showMap()
+
+for x in range(2,100):
+    tempSumList = list(SumList)
+    print(f"Protocol 2-{x}")
+    for i in nodes[0].child:
+        MyProtocol2(nodes[i]) 
+    for node in nodes:
+        node.HopCount = GetHop(node)
+    for node in nodes:
+        node.Transmission = GetTranmission(node)
+        node.GetSlot()
+    for node in nodes:
+        node.Transmission = GetTranmission(node)
+        node.GetSlot()
+    PrintSF()
+    showMap()
+    gateway = nodes[0]
+    if gateway.SFSlot[7] > SumList[7]:
+        break
+    for sf in range(8,13):
+        if SumList[sf]*2 > SumList[sf-1]:
+            break
+        if gateway.SFSlot[sf] < SumList[sf]:
+            break
+    if x > 20:
+        if tempSumList[7] == SumList[7]:
+            break
 
 
 exit(0)

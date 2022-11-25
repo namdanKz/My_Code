@@ -10,7 +10,7 @@ while True:
     try:
         dataInput = open(fName).read().splitlines()
     except EnvironmentError:
-        print("File doesn't exits")
+        print("File doesn't exist")
         continue
     for row in dataInput:
         segment = row.split(',')
@@ -50,7 +50,7 @@ for i in range(len(data)):
 while True:
     menu = input("(d)ata, (t)eam, (s)core: ")
     if not menu.lower() in ['d','t','s']:
-        print("Menu doesn't exits")
+        print("Menu doesn't exist")
         continue
     if menu == 'd':
         print("+-----+-----+----+----+------+")
