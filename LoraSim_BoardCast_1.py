@@ -561,11 +561,11 @@ if len(sys.argv) >= 6:
     nrbs = int(sys.argv[5])
     if len(sys.argv) > 6:
         full_collision = bool(int(sys.argv[6]))
-    print ("Nodes:", nrNodes)
-    print ("AvgSendTime (exp. distributed):",avgSendTime)
-    print ("Experiment: ", experiment)
-    print ("Simtime: ", simtime)
-    print ("nrbs: ", nrbs)
+    #print ("Nodes:", nrNodes)
+    #print ("AvgSendTime (exp. distributed):",avgSendTime)
+    #print ("Experiment: ", experiment)
+    #print ("Simtime: ", simtime)
+    #print ("nrbs: ", nrbs)
     if (nrbs > 4 and nrbs!=8 and nrbs!=6 and nrbs != 24):
         print("too many base stations, max 4 or 6 or 8 base stations")
         exit(-1)
@@ -621,10 +621,10 @@ elif experiment == 3:
 minsensi = sensi[5,2]
 
 Lpl = Ptx - minsensi
-print ("amin", minsensi, "Lpl", Lpl)
+#print ("amin", minsensi, "Lpl", Lpl)
 #maxDist = d0*(math.e**((Lpl-Lpld0)/(10.0*gamma)))
 maxDist = config.maxDist
-print ("maxDist:", maxDist)
+#print ("maxDist:", maxDist)
 
 nodes:list[myNode]
 
@@ -638,9 +638,9 @@ ymax = bsy + maxDist + 20
 maxbsReceives = 8
 
 maxX = 2 * maxDist * math.sin(60*(math.pi/180)) # == sqrt(3) * maxDist
-print("maxX ", maxX)
+#print("maxX ", maxX)
 maxY = 2 * maxDist * math.sin(30*(math.pi/180)) # == maxdist
-print("maxY", maxY)
+#print("maxY", maxY)
 
 
 # prepare graphics and add sink
@@ -822,13 +822,14 @@ def ResetAllNodeSF():
     for node in nodes:
         node.ResetSF()
 ResetAllNodeSF()
-#Find Parent Phase
 
+#Find Parent Phase
 for node in nodes:
+    # node 0 = gateway << No parent
     if node.id == 0:
         continue
     for reach in node.GetnbLower():
-        if node.GetSFLevel() <= nodes[reach].GetSFLevel():
+        if node.GetSFLevel() <= nodes[reach].GetSFLevel(): # ไม่ต้องมีก็ได้
             continue
         if node.parent == -1:
             node.parent = nodes[reach].id
@@ -849,7 +850,7 @@ def GetHop(node:myNode):
     for i in node.child:
         sum = sum + GetHop(nodes[i])
     if node.id != 0:
-        sum+= 1
+        sum+= 1 # it self
     return sum
 
 def GetTranmission(node:myNode):
@@ -859,7 +860,7 @@ def GetTranmission(node:myNode):
     for i in node.child:
         sum = sum + GetTranmission(nodes[i])
     if node.id != 0:
-        sum+= node.HopCount
+        sum += node.HopCount
     return sum
 
 # * Reset all node to SF7
@@ -898,7 +899,6 @@ def MyProtocol(node:myNode):
 def MyProtocol2(node:myNode):
     for ch in node.child:
         childNode = nodes[ch]
-        
         for sf in range(8,13):
             if childNode.Transmission <= node.SFSlot[sf]:
                 for nb in childNode.nbLower[sf]:
@@ -1009,6 +1009,7 @@ def showMap():
 
     plt.show()
     
+MaxBefore = sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 7)    
 SumList = [0]*13
 def PrintSF():
     global SumList
@@ -1021,8 +1022,8 @@ def PrintSF():
     SumList[11]= sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 11)
     SumList[12]= sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 12)
     for i in range(7,13):
-        print(f"Sum node SF{i} = {SumList[i]}")
-
+        print(f"Sum SF{i} = {SumList[i]} ",end="")
+    print(f"% = {100*SumList[7]/MaxBefore:.4f}")
 
 PrintSF()
 showMap()
@@ -1033,6 +1034,7 @@ if config.ProtocolMode == 1:
         MyProtocol(nodes[i]) 
 elif config.ProtocolMode == 2:
     MyProtocol(nodes[0]) 
+
 for node in nodes:
     node.HopCount = GetHop(node)
 
@@ -1043,19 +1045,8 @@ print("Protocol 1")
 PrintSF()
 showMap()
 
-print("Protocol 2")
-for i in nodes[0].child:
-    MyProtocol2(nodes[i]) 
-for node in nodes:
-    node.HopCount = GetHop(node)
 
-for node in nodes:
-    node.Transmission = GetTranmission(node)
-    node.GetSlot()
-PrintSF()
-showMap()
-
-for x in range(2,100):
+for x in range(1,100):
     tempSumList = list(SumList)
     print(f"Protocol 2-{x}")
     for i in nodes[0].child:
@@ -1064,10 +1055,7 @@ for x in range(2,100):
         node.HopCount = GetHop(node)
     for node in nodes:
         node.Transmission = GetTranmission(node)
-        node.GetSlot()
-    for node in nodes:
-        node.Transmission = GetTranmission(node)
-        node.GetSlot()
+        #node.GetSlot()
     PrintSF()
     showMap()
     gateway = nodes[0]
@@ -1078,9 +1066,9 @@ for x in range(2,100):
             break
         if gateway.SFSlot[sf] < SumList[sf]:
             break
-    if x > 20:
-        if tempSumList[7] == SumList[7]:
-            break
+    #if x > 4:
+    if tempSumList[7] == SumList[7]:
+        break
 
 
 exit(0)

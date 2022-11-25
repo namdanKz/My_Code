@@ -74,9 +74,8 @@ class myNode():
             self.nbSame[self.SF].append(id)
         elif self.SFlevel[self.SF] < SfLv:
             self.nbUpper[self.SF].append(id)
-        else:
+        elif self.SFlevel[self.SF] > SfLv:
             self.nbLower[self.SF].append(id)
-            #self.SFlevel[self.SF] = SfLv+1
         return
     
     def ResetSF(self):
