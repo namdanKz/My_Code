@@ -25,7 +25,7 @@ cr_config = 1
 bw_config = 125
 
 # width of area of the experiment
-maxDist = 400
+maxDist = 350
 part_config = 15
 
 
@@ -34,7 +34,7 @@ ShowMode = 1
 
 pktLen = 1
 
-Ptx = 14 
+Ptx = 23 
 gamma = 2.08
 d0 = 40.0
 var = 0           # variance ignored for now

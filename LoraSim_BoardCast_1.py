@@ -1023,7 +1023,15 @@ def PrintSF():
     SumList[12]= sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 12)
     for i in range(7,13):
         print(f"Sum SF{i} = {SumList[i]} ",end="")
-    print(f"% = {100*SumList[7]/MaxBefore:.4f}")
+    AirTime = [0]*13
+    AirTime[7] = SumList[7]
+    AirTime[8] = SumList[8]*2
+    AirTime[9] = SumList[9]*4
+    AirTime[10] = SumList[10]*8
+    AirTime[11] = SumList[11]*16
+    AirTime[12] = SumList[12]*32
+    
+    print(f"% = {100*max(AirTime)/MaxBefore:.4f} System = {sum(SumList)}")
 
 PrintSF()
 showMap()
@@ -1040,36 +1048,38 @@ for node in nodes:
 
 for node in nodes:
     node.Transmission = GetTranmission(node)
-    node.GetSlot()
+    #node.GetSlot()
 print("Protocol 1")
 PrintSF()
 showMap()
 
-
-for x in range(1,100):
-    tempSumList = list(SumList)
-    print(f"Protocol 2-{x}")
-    for i in nodes[0].child:
-        MyProtocol2(nodes[i]) 
-    for node in nodes:
-        node.HopCount = GetHop(node)
-    for node in nodes:
-        node.Transmission = GetTranmission(node)
-        #node.GetSlot()
-    PrintSF()
-    showMap()
-    gateway = nodes[0]
-    if gateway.SFSlot[7] > SumList[7]:
-        break
-    for sf in range(8,13):
-        if SumList[sf]*2 > SumList[sf-1]:
+def RunProtocol2():
+    for x in range(1,100):
+        tempSumList = list(SumList)
+        print(f"Protocol 2-{x}")
+        for i in nodes[0].child:
+            MyProtocol2(nodes[i]) 
+        for node in nodes:
+            node.HopCount = GetHop(node)
+        for node in nodes:
+            node.Transmission = GetTranmission(node)
+            #node.GetSlot()
+        PrintSF()
+        showMap()
+        gateway = nodes[0]
+        if gateway.SFSlot[7] > SumList[7]:
             break
-        if gateway.SFSlot[sf] < SumList[sf]:
+        
+        for sf in range(8,13):
+            if SumList[sf]*2 > SumList[sf-1]:
+                return
+            if gateway.SFSlot[sf] < SumList[sf]:
+                return
+        #if x > 4:
+        if tempSumList[7] == SumList[7]:
             break
-    #if x > 4:
-    if tempSumList[7] == SumList[7]:
-        break
 
+RunProtocol2()
 
 exit(0)
 
