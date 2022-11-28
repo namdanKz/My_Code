@@ -899,7 +899,7 @@ def MyProtocol(node:myNode):
 def MyProtocol2(node:myNode):
     for ch in node.child:
         childNode = nodes[ch]
-        for sf in range(8,13):
+        for sf in range(node.SF,13):
             if childNode.Transmission <= node.SFSlot[sf]:
                 for nb in childNode.nbLower[sf]:
                     childNode2 = nodes[nb]
@@ -1069,15 +1069,15 @@ def RunProtocol2():
         gateway = nodes[0]
         if gateway.SFSlot[7] > SumList[7]:
             break
+        if x > 4:
+            for sf in range(8,13):
+                if SumList[sf]*2 > SumList[sf-1]:
+                    return
+                if gateway.SFSlot[sf] < SumList[sf]:
+                    return
         
-        for sf in range(8,13):
-            if SumList[sf]*2 > SumList[sf-1]:
-                return
-            if gateway.SFSlot[sf] < SumList[sf]:
-                return
-        #if x > 4:
-        if tempSumList[7] == SumList[7]:
-            break
+            if tempSumList[7] == SumList[7]:
+                break
 
 RunProtocol2()
 
