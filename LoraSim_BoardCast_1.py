@@ -718,7 +718,7 @@ def genNode():
         # myNode takes period (in ms), base station id packetlen (in Bytes)
         # 1000000 = 16 min
         node = myNode(i, avgSendTime,config.pktLen)
-
+        
         node.x = listLocation[i-1][0]
         node.y = listLocation[i-1][1]
 

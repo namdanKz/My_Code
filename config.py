@@ -37,9 +37,9 @@ part_config = 15
 
 
 ProtocolMode = 1
-ShowMode = 1
+ShowMode = 0
 
-pktLen = 1
+pktLen = 10
 
 Ptx = 23 
 gamma = 2.08
