@@ -37,6 +37,7 @@ class myPacket():
 
         # log-shadow
         Lpl = cf.Lpld0 + 10*cf.gamma*math.log(distance/cf.d0)
+        Lpl = 20*math.log(0.125) + 20 *math.log(distance)
         Prx = cf.Ptx - cf.GL - Lpl
         
         # transmission range, needs update XXX
@@ -48,7 +49,7 @@ class myPacket():
         # frequencies: lower bound + number of 61 Hz steps
         self.freq = 860000000 + random.randint(0,2622950)
 
-        self.freq = 860000000
+        self.freq = 860_000_000
         
         self.rectime = airtime(self.sf,self.cr,self.pl,self.bw)
         # denote if packet is collided
