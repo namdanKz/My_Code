@@ -34,10 +34,15 @@ class myPacket():
         # for experiment 3 find the best setting
         # OBS, some hardcoded values
         Prx = cf.Ptx  ## zero path loss by default
+        
+        # frequencies: lower bound + number of 61 Hz steps
+        self.freq = 860000000 + random.randint(0,2622950)
+
+        self.freq = 860_000_000
 
         # log-shadow
-        Lpl = cf.Lpld0 + 10*cf.gamma*math.log(distance/cf.d0)
-        Lpl = 20*math.log(0.125) + 20 *math.log(distance)
+        Lpl = cf.Lpld0 + 10*cf.gamma*math.log10(distance/cf.d0)
+        Lpl = 20*math.log10(self.freq) + 20 *math.log10(distance)
         Prx = cf.Ptx - cf.GL - Lpl
         
         # transmission range, needs update XXX
@@ -46,10 +51,7 @@ class myPacket():
         self.symTime = (2.0**self.sf)/self.bw
         self.arriveTime = 0
         self.rssi = Prx
-        # frequencies: lower bound + number of 61 Hz steps
-        self.freq = 860000000 + random.randint(0,2622950)
 
-        self.freq = 860_000_000
         
         self.rectime = airtime(self.sf,self.cr,self.pl,self.bw)
         # denote if packet is collided
