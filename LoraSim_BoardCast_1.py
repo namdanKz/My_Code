@@ -761,7 +761,7 @@ for i in range(0,nrAllNode):
 #Setup Phase
 print("Setup Phase")
 for sf in range(7,13):
-    for i in range(0,3):
+    for i in range(0,4):
         for node in nodes:
             node.SF = sf
             if node.id == 0:
@@ -889,7 +889,6 @@ def MyProtocol(node:myNode):
                     ChangeAllSF(childNode,sf)
                     nodes[0].child.append(childNode.id)
                     node.child.remove(ch)
-
                     childNode.parent = 0
                     node.SFSlot[sf] -= childNode.Transmission
                     break
@@ -907,9 +906,7 @@ def MyProtocol2(node:myNode):
                     #if childNode2.SF == sf and childNode2.SFSlot[sf] >= childNode.Transmission:
                         ChangeAllSF(childNode,sf)
                         childNode2.child.append(childNode.id)
-                        
                         node.child.remove(ch)
-
                         childNode.parent = childNode2.id
                         node.SFSlot[sf] -= childNode.Transmission
                         break
@@ -947,7 +944,6 @@ with open('basestation.txt', 'w') as bfile:
 # print ("nr received packets", len(recPackets))
 # print ("nr collided packets", len(collidedPackets))
 # print ("nr lost packets", len(lostPackets))
-
 
 
 # # this can be done to keep graphics visible
@@ -1011,6 +1007,7 @@ def showMap():
     
 MaxBefore = sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 7)    
 SumList = [0]*13
+
 def PrintSF():
     global SumList
     SumList = [0]*13

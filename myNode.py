@@ -1,13 +1,13 @@
 import math
 
 Myconst = [0]*13
-Myconst[7] = 32/63
-Myconst[8] = 16/63
-Myconst[9] = 8/63
-Myconst[10] = 4/63
-Myconst[11] = 2/63
-Myconst[12] = 1/63
-
+Myconst[7] =   0.449087  #32/63
+Myconst[8] =   0.256821867776  #16/63
+Myconst[9] =   0.145456591726  #8/63
+Myconst[10] =  0.080571514445  #4/63
+Myconst[11] =  0.044184338497  #2/63
+Myconst[12] =  0.023878687556  #1/63
+# 0.4490 + 0.2568 + 0.1455 +0.0806 + 0.0442 + 0.0239 = 1
 class myNode():
     def __init__(self, id, period, packetlen):
         # initail sf is 7

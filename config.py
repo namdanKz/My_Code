@@ -18,12 +18,12 @@ sf12 = np.array([12,-133.25,-132.25,-132.25])
  500 kHz
 """
 
-sf7 = np.array([7,-123,-120,-116])
-sf8 = np.array([8,-126,-123,-119])
-sf9 = np.array([9,-129,-125,-122])
-sf10 = np.array([10,-132,-128,-1125])
-sf11 = np.array([11,-133,-130,-128])
-sf12 = np.array([12,-136,-133,-130])
+# sf7 = np.array([7,-123,-120,-116])
+# sf8 = np.array([8,-126,-123,-119])
+# sf9 = np.array([9,-129,-125,-122])
+# sf10 = np.array([10,-132,-128,-1125])
+# sf11 = np.array([11,-133,-130,-128])
+# sf12 = np.array([12,-136,-133,-130])
 
 sensi = np.array([sf7,sf8,sf9,sf10,sf11,sf12])
 
@@ -32,18 +32,18 @@ cr_config = 1
 bw_config = 125
 
 # width of area of the experiment
-maxDist = 50_000
-part_config = 10
+maxDist = 10_000
+part_config = 15
 
 
 ProtocolMode = 1
-ShowMode = 0
+ShowMode = 1 # 0 = Show , 1 = Not Show
 
-pktLen = 10
+pktLen = 25
 
-Ptx = 23 
-gamma = 2.08
-d0 = 40.0
+Ptx = 14 
+gamma = 2.65 #2.08 #2.65
+d0 = 1000 #40.0
 var = 0           # variance ignored for now
-Lpld0 = 127.41
+Lpld0 = 132.25 #127.41 #132.25
 GL = 0
