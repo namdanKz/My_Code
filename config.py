@@ -38,6 +38,7 @@ part_config = 15
 
 ProtocolMode = 1
 ShowMode = 1 # 0 = Show , 1 = Not Show
+PathLossMode = 0 # 0 = free spave , 1 = dortmund
 
 pktLen = 25
 
@@ -47,3 +48,10 @@ d0 = 1000 #40.0
 var = 0           # variance ignored for now
 Lpld0 = 132.25 #127.41 #132.25
 GL = 0
+
+if PathLossMode == 0:
+    gamma = 2.08
+    Lpld0 = 127.41
+elif PathLossMode == 1:
+    gamma = 2.65
+    Lpld0 = 132.25
