@@ -31,23 +31,31 @@ sf_cofig = 7
 cr_config = 1
 bw_config = 125
 
-# width of area of the experiment
-maxDist = 10_000
-part_config = 15
 
-
+TestCondition = 2
 ProtocolMode = 1
 ShowMode = 1 # 0 = Show , 1 = Not Show
 PathLossMode = 0 # 0 = free spave , 1 = dortmund
 
+
+# width of area of the experiment
+maxDist = 10_000
+part_config = 15 # block number for node 15 = 15*15 =225 node
+
+
+
+
 pktLen = 25
 
 Ptx = 14 
-gamma = 2.65 #2.08 #2.65
+gamma = 2.65 #2.08 free space #2.65 dortmund
 d0 = 1000 #40.0
 var = 0           # variance ignored for now
-Lpld0 = 132.25 #127.41 #132.25
+Lpld0 = 132.25 #127.41 free space  #132.25 dortmund
 GL = 0
+
+
+
 
 if PathLossMode == 0:
     gamma = 2.08
@@ -55,3 +63,37 @@ if PathLossMode == 0:
 elif PathLossMode == 1:
     gamma = 2.65
     Lpld0 = 132.25
+
+
+if TestCondition == 1:
+    PathLossMode = 0
+    maxDist = 15_000
+    part_config = 15
+elif TestCondition == 2:
+    PathLossMode = 0
+    maxDist = 15_000
+    part_config = 20
+elif TestCondition == 3:
+    PathLossMode = 0
+    maxDist = 20_000
+    part_config = 15
+elif TestCondition == 4:
+    PathLossMode = 0
+    maxDist = 20_000
+    part_config = 20    
+elif TestCondition == 5:
+    PathLossMode = 1
+    maxDist = 15_000
+    part_config = 15
+elif TestCondition == 6:
+    PathLossMode = 1
+    maxDist = 15_000
+    part_config = 20
+elif TestCondition == 7:
+    PathLossMode = 1
+    maxDist = 20_000
+    part_config = 15
+elif TestCondition == 8:
+    PathLossMode = 1
+    maxDist = 20_000
+    part_config = 20 

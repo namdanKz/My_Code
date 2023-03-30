@@ -65,6 +65,8 @@ import matplotlib.pyplot as plt
 from myPacket import myPacket
 
 
+
+
 now = datetime.now()
 dt_string = now.strftime("%b%d_%H%M%S")
 
@@ -1007,6 +1009,7 @@ def showMap():
     
 MaxBefore = sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 7)    
 SumList = [0]*13
+SumNode = [0]*13
 
 def PrintSF():
     global SumList
@@ -1077,6 +1080,30 @@ def RunProtocol2():
                 break
 
 RunProtocol2()
+
+def SumEachSF():
+    print("Sum Node in system")
+    global SumNode
+    SumList = [0]*13
+    #SumList[7]= sum(1 for i in nodes if i.id != 0 and i.SF == 7)
+    SumNode[7]= sum(1 for i in nodes[0].child if nodes[i].SF == 7)
+    SumNode[8]= sum(1 for i in nodes[0].child if nodes[i].SF == 8)
+    SumNode[9]= sum(1 for i in nodes[0].child if nodes[i].SF == 9)
+    SumNode[10]= sum(1 for i in nodes[0].child if nodes[i].SF == 10)
+    SumNode[11]= sum(1 for i in nodes[0].child if nodes[i].SF == 11)
+    SumNode[12]= sum(1 for i in nodes[0].child if nodes[i].SF == 12)
+    for i in range(7,13):
+        print(f"Sum SF{i} = {SumNode[i]} ",end="")
+    AirTime = [0]*13
+    AirTime[7] = SumNode[7]
+    AirTime[8] = SumNode[8]*2
+    AirTime[9] = SumNode[9]*4
+    AirTime[10] = SumNode[10]*8
+    AirTime[11] = SumNode[11]*16
+    AirTime[12] = SumNode[12]*32
+    
+    print(f"% = {100*max(AirTime)/len(nodes):.4f} Before = {len(nodes)}")
+SumEachSF()
 
 exit(0)
 
