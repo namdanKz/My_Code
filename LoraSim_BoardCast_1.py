@@ -69,12 +69,20 @@ from myPacket import myPacket
 
 now = datetime.now()
 dt_string = now.strftime("%b%d_%H%M%S")
-
-#test save log
-fPacketPkg = f"expPkg{dt_string}.csv"
-fPacketNode = f"expNode{dt_string}.csv"
 #Text for header
 NodeSpace = "_"*6
+#test save log
+fPacketPkg = f"TestResult{dt_string}.csv"
+fPacketNode = f"expNode{dt_string}.csv"
+TestFileName = f"TestResult{config.maxDist}_{config.part_config}_{config.Ptx}.csv"
+
+TestHeader = "{:<8}{:<6}{:<6}{:<6}{:<6}{:<6}{:<6}{:<6}".format("Type","SF7","SF8","SF9","SF10","SF11","SF12","%")
+#Check file
+if not os.path.exists(TestFileName):
+    with open(TestFileName, "a") as myfile:
+        myfile.write(TestHeader)
+    myfile.close()
+
 def createNodeLog():
     NodeHeader = f"Node-ID{NodeSpace} X{NodeSpace} Y{NodeSpace}\n"
     with open(fPacketNode, "a") as myfile:
@@ -85,6 +93,11 @@ def createPkgLog():
     PacketHeader = f"At{NodeSpace} Node-{NodeSpace} to Node-{NodeSpace}\n"
     with open(fPacketPkg, "a") as myfile:
         myfile.write(PacketHeader)
+    myfile.close()
+
+def createTResult(result):
+    with open(TestFileName, "a") as myfile:
+        myfile.write(result)
     myfile.close()
 
 #open(fPacketLog,'w').close()
@@ -1010,9 +1023,12 @@ def showMap():
 MaxBefore = sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 7)    
 SumList = [0]*13
 SumNode = [0]*13
-
+System_Result = ""
+GateWay_Result = ""
 def PrintSF():
     global SumList
+    global System_Result
+    System_Result = "{:<8}".format("Sysmtem")
     SumList = [0]*13
     #SumList[7]= sum(1 for i in nodes if i.id != 0 and i.SF == 7)
     SumList[7]= sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 7)
@@ -1022,7 +1038,9 @@ def PrintSF():
     SumList[11]= sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 11)
     SumList[12]= sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 12)
     for i in range(7,13):
-        print(f"Sum SF{i} = {SumList[i]} ",end="")
+        Sum = f"Sum SF{i} = {SumList[i]} "
+        System_Result += f"{Sum:<6}"
+        print(Sum,end="")
     AirTime = [0]*13
     AirTime[7] = SumList[7]
     AirTime[8] = SumList[8]*2
@@ -1030,8 +1048,10 @@ def PrintSF():
     AirTime[10] = SumList[10]*8
     AirTime[11] = SumList[11]*16
     AirTime[12] = SumList[12]*32
-    
-    print(f"% = {100*max(AirTime)/MaxBefore:.4f} System = {sum(SumList)}")
+    PercentResult = f"{100*max(AirTime)/MaxBefore:.4f}"
+    Sum = f"% = {PercentResult} System = {sum(SumList)}"
+    print(Sum)
+    System_Result += f"{PercentResult:<6}"
 
 PrintSF()
 showMap()
@@ -1084,7 +1104,7 @@ RunProtocol2()
 def SumEachSF():
     print("Sum Node in system")
     global SumNode
-    SumList = [0]*13
+    SumNode = [0]*13
     #SumList[7]= sum(1 for i in nodes if i.id != 0 and i.SF == 7)
     SumNode[7]= sum(1 for i in nodes[0].child if nodes[i].SF == 7)
     SumNode[8]= sum(1 for i in nodes[0].child if nodes[i].SF == 8)

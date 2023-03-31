@@ -27,27 +27,37 @@ sf12 = np.array([12,-133.25,-132.25,-132.25])
 
 sensi = np.array([sf7,sf8,sf9,sf10,sf11,sf12])
 
+DistMode = 4 # Default = 4
+NodeMode = 0 # Default = 0
+PtxMode = 4 # Default = 4
+TestCondition = [DistMode,NodeMode,PtxMode]
+
+
+Dist_Setting = [11_000,12_000,13_000,14_000,15_000]
+Node_Setting = [16,17,18,19,20]
+Ptx_Setting =[10,11,12,13,14]
+
 sf_cofig = 7
 cr_config = 1
 bw_config = 125
 
 
-TestCondition = 2
+
 ProtocolMode = 1
 ShowMode = 1 # 0 = Show , 1 = Not Show
 PathLossMode = 0 # 0 = free spave , 1 = dortmund
 
 
 # width of area of the experiment
-maxDist = 10_000
-part_config = 15 # block number for node 15 = 15*15 =225 node
+maxDist = Dist_Setting[DistMode]#10_000
+part_config = Node_Setting[NodeMode] # block number for node 15 = 15*15 =225 node
 
 
 
 
 pktLen = 25
 
-Ptx = 14 
+Ptx = Ptx_Setting[PtxMode] 
 gamma = 2.65 #2.08 free space #2.65 dortmund
 d0 = 1000 #40.0
 var = 0           # variance ignored for now
@@ -57,43 +67,3 @@ GL = 0
 
 
 
-if PathLossMode == 0:
-    gamma = 2.08
-    Lpld0 = 127.41
-elif PathLossMode == 1:
-    gamma = 2.65
-    Lpld0 = 132.25
-
-
-if TestCondition == 1:
-    PathLossMode = 0
-    maxDist = 15_000
-    part_config = 15
-elif TestCondition == 2:
-    PathLossMode = 0
-    maxDist = 15_000
-    part_config = 20
-elif TestCondition == 3:
-    PathLossMode = 0
-    maxDist = 20_000
-    part_config = 15
-elif TestCondition == 4:
-    PathLossMode = 0
-    maxDist = 20_000
-    part_config = 20    
-elif TestCondition == 5:
-    PathLossMode = 1
-    maxDist = 15_000
-    part_config = 15
-elif TestCondition == 6:
-    PathLossMode = 1
-    maxDist = 15_000
-    part_config = 20
-elif TestCondition == 7:
-    PathLossMode = 1
-    maxDist = 20_000
-    part_config = 15
-elif TestCondition == 8:
-    PathLossMode = 1
-    maxDist = 20_000
-    part_config = 20 
