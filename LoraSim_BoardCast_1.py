@@ -64,9 +64,6 @@ import config
 import matplotlib.pyplot as plt
 from myPacket import myPacket
 
-
-
-
 now = datetime.now()
 dt_string = now.strftime("%b%d_%H%M%S")
 #Text for header
@@ -74,14 +71,27 @@ NodeSpace = "_"*6
 #test save log
 fPacketPkg = f"TestResult{dt_string}.csv"
 fPacketNode = f"expNode{dt_string}.csv"
-TestFileName = f"TestResult{config.maxDist}_{config.part_config}_{config.Ptx}.csv"
 
-TestHeader = "{:<8}{:<6}{:<6}{:<6}{:<6}{:<6}{:<6}{:<6}".format("Type","SF7","SF8","SF9","SF10","SF11","SF12","%")
-#Check file
-if not os.path.exists(TestFileName):
-    with open(TestFileName, "a") as myfile:
-        myfile.write(TestHeader)
-    myfile.close()
+TestFileName = ""
+
+def CreateLogFile():
+    global TestFileName
+    config.maxDist = config.Dist_Setting[config.DistMode]#10_000
+    config.part_config = config.Node_Setting[config.NodeMode] # block number for node 15 = 15*15 =225 node
+    config.Ptx = config.Ptx_Setting[config.PtxMode] 
+    Test_Setting = f"{config.maxDist}_{config.part_config}_{config.Ptx}"
+    TestFileName = f"TestResult{Test_Setting}.csv"
+
+    TestHeader = "{:<8}{:<6}{:<6}{:<6}{:<6}{:<6}{:<6}{:<6}\n".format("Type","SF7","SF8","SF9","SF10","SF11","SF12","%")
+    #Check file
+    if not os.path.exists(TestFileName):
+        with open(TestFileName, "a") as myfile:
+            myfile.write(f"Condition = {Test_Setting}\n")
+            myfile.write(TestHeader)
+        myfile.close()
+
+#CreateLogFile()
+
 
 def createNodeLog():
     NodeHeader = f"Node-ID{NodeSpace} X{NodeSpace} Y{NodeSpace}\n"
@@ -95,7 +105,7 @@ def createPkgLog():
         myfile.write(PacketHeader)
     myfile.close()
 
-def createTResult(result):
+def SaveResult(result):
     with open(TestFileName, "a") as myfile:
         myfile.write(result)
     myfile.close()
@@ -130,128 +140,6 @@ sf10 = np.array([10,-132.75,-130.25,-128.75])
 sf11 = np.array([11,-134.5,-132.75,-128.75])
 sf12 = np.array([12,-133.25,-132.25,-132.25])
 
-# ! Move class packet 
-# ! Move Node to new file
-
-#
-# this function creates a packet (associated with a node)
-# it also sets all parameters, currently random
-#
-# class myPacket():
-#     def __init__(self, nodeid, plen, distance, bs,SF):
-#         global experiment
-#         global Ptx
-#         global gamma
-#         global d0
-#         global var
-#         global Lpld0
-#         global GL
-
-#         # new: base station ID
-#         # ! bs = destination node number
-#         self.bs = bs
-#         self.nodeid = nodeid
-#         # randomize configuration values
-#         self.sf = random.randint(6,12)
-#         self.cr = random.randint(1,4)
-#         self.bw = random.choice([125, 250, 500])
-
-#         # for certain experiments override these
-#         if experiment==1 or experiment == 0:
-#             self.sf = 12
-#             self.cr = 4
-#             self.bw = 125
-
-#         # for certain experiments override these
-#         if experiment==2:
-#             self.sf = 6
-#             self.cr = 1
-#             self.bw = 500
-        
-#         # ! Toomtam 
-#         self.sf = SF
-#         self.cr = 4
-#         self.bw = 125
-        
-        
-#         # for experiment 3 find the best setting
-#         # Obs, some hardcoded values
-#         Prx = Ptx  ## zero path loss by default
-
-#         # log-shadow
-#         Lpl = Lpld0 + 10*gamma*math.log(distance/d0)
-#         Prx = Ptx - GL - Lpl
-
-#         if (experiment == 3):
-#             minairtime = 9999
-#             minsf = 0
-#             minbw = 0
-
-#             for i in range(0,6):
-#                 for j in range(1,4):
-#                     if (sensi[i,j] < Prx):
-#                         self.sf = sensi[i,0]
-#                         if j==1:
-#                             self.bw = 125
-#                         elif j==2:
-#                             self.bw = 250
-#                         else:
-#                             self.bw=500
-#                         at = airtime(self.sf,4,20,self.bw)
-#                         if at < minairtime:
-#                             minairtime = at
-#                             minsf = self.sf
-#                             minbw = self.bw
-
-#             self.rectime = minairtime
-#             self.sf = minsf
-#             self.bw = minbw
-#             if (minairtime == 9999):
-#                 print ("does not reach base station")
-#                 exit(-1)
-        
-#         # transmission range, needs update XXX
-#         self.transRange = 150
-#         self.pl = plen
-#         self.symTime = (2.0**self.sf)/self.bw
-#         self.arriveTime = 0
-#         self.rssi = Prx
-#         # frequencies: lower bound + number of 61 Hz steps
-#         self.freq = 860000000 + random.randint(0,2622950)
-
-#         # for certain experiments override these and
-#         # choose some random frequences
-#         if experiment == 1:
-#             self.freq = random.choice([860000000, 864000000, 868000000])
-#         else:
-#             self.freq = 860000000
-        
-#         self.rectime = airtime(self.sf,self.cr,self.pl,self.bw)
-#         # denote if packet is collided
-#         self.collided = 0
-#         self.processed = 0
-#         # mark the packet as lost when it's rssi is below the sensitivity
-#         # don't do this for experiment 3, as it requires a bit more work
-#         # ! note this in paper
-#         if experiment != 3:
-#             global minsensi
-#             if self.sf == 7:
-#                 minsensi = sensi[0,1]
-#             elif self.sf == 8:
-#                 minsensi = sensi[1,1]
-#             elif self.sf == 9:
-#                 minsensi = sensi[2,1]
-#             elif self.sf == 10:
-#                 minsensi = sensi[3,1]
-#             elif self.sf == 11:
-#                 minsensi = sensi[4,1]
-#             elif self.sf == 12:
-#                 minsensi = sensi[5,1]
-#             self.lost = self.rssi < minsensi
-#             if self.lost:
-#                 print("node {} bs {} lost {} min{}".format(self.nodeid, self.bs, self.lost,minsensi))
-#             else:
-#                 print("node {} bs {} lost {} min{}".format(self.nodeid, self.bs, self.lost,minsensi))
 
 #
 # check for collisions at base station
@@ -375,6 +263,7 @@ def airtime(sf,cr,pl,bw):
 #
 def transmit(env,node:myNode):
     #while True:
+    global pack_mat
     while not node.finished:
         if not node.cansend:
             yield env.timeout(1)
@@ -591,15 +480,49 @@ else:
     exit(-1)
 
 # global stuff
-nodes = []
+
 packetsAtbs = []
 env = simpy.Environment()
 
+
+packetsAtNode = []
+
+# ! Global parameter 
+nodes = []
 nrNodes = config.part_config**2
+nrAllNode = nrbs + nrNodes
+maxDist = config.maxDist
+pack_mat:list[list[list[myPacket]]] = []
+
+# ! Array for location
+loX = []
+loY = []
+eachPart = int(maxDist/config.part_config)
+listLocation = []
+
+# * Create distance matrix and add packet to node
+cols = nrAllNode
+rows = nrAllNode
+
+MaxBefore = 0    
+SumList = [0]*13
+SumNode = [0]*13
+System_Result = ""
+GateWay_Result = ""
 
 # * new
-packetsAtNode = []
-nrAllNode = nrbs + nrNodes
+def CreateNodePara():
+    global nodes
+    global nrNodes
+    global nrAllNode
+
+    nodes = []
+    nrNodes = config.part_config**2
+    nrAllNode = nrbs + nrNodes
+
+#CreateNodePara()
+
+
 
 # max distance: 300m in city, 3000 m outside (5 km Utz experiment)
 # also more unit-disc like according to Utz
@@ -638,7 +561,7 @@ minsensi = sensi[5,2]
 Lpl = Ptx - minsensi
 #print ("amin", minsensi, "Lpl", Lpl)
 #maxDist = d0*(math.e**((Lpl-Lpld0)/(10.0*gamma)))
-maxDist = config.maxDist
+
 #print ("maxDist:", maxDist)
 
 nodes:list[myNode]
@@ -673,25 +596,24 @@ bs = []
 packetsAtNode = []
 packetsRecNode = []
 
-# ! ****** Log Method *******
-def LogTxt_Node(node:myNode):
-    textNode = f"Node ID ={node.id:>4} X ={node.x:>4} Y ={node.y:>4}\n"
-    with open(fPacketNode, "a") as myfile:
-        myfile.write(textNode)
-    myfile.close()
-
-def LogTxt_Pkg(time,send,to,result):
-    textPkg = f"{time} from {send} to {to} {result}"
-    with open(fPacketPkg, "a") as myfile:
-        myfile.write(textPkg)
-    myfile.close()
 
 
-# ! Array for location
+def CreateLocationPara():
+    global loX
+    global loY
+    global nodes
+    global eachPart
+    global listLocation
+    loX = []
+    loY = []
+    nodes = []
+    # 5*5 = 25 sqr box
+    eachPart = int(maxDist/config.part_config)
+    # number of node in each box
+    listLocation = []
 
-loX = []
-loY = []
-nodes = []
+#CreateLocationPara()
+
 def CreateGateway():
     # * Gateway
     global nodes
@@ -705,12 +627,9 @@ def CreateGateway():
     nodes.append(gateway)
     env.process(transmit2(env,gateway))
 
-# 5*5 = 25 sqr box
-eachPart = int(maxDist/config.part_config)
 
-# number of node in each box
 
-listLocation = []
+
 # ! Generate node location function
 def genNode():
     global nodes
@@ -745,60 +664,68 @@ def genNode():
         env.process(transmit2(env,node))
     return
 
-genNode()
+#genNode()
 
 packetsAtNode.append([])
 packetsRecNode.append([])
 
 
-# * Create distance matrix and add packet to node
-cols = nrAllNode
-rows = nrAllNode
-#dist_mat = [[0 for i in range(cols)] for j in range(rows)]
-pack_mat:list[list[list[myPacket]]]= [[] for _ in range(13)]
-for i in range(7,13,1):
-    pack_mat[i] = [[0 for i in range(cols)] for j in range(rows)]
+def CreatePackage():
+    global cols
+    global rows
+    global pack_mat
+    # * Create distance matrix and add packet to node
+    cols = nrAllNode
+    rows = nrAllNode
+    #dist_mat = [[0 for i in range(cols)] for j in range(rows)]
+    pack_mat= [[] for _ in range(13)]
+    for i in range(7,13,1):
+        pack_mat[i] = [[0 for i in range(cols)] for j in range(rows)]
 
-for i in range(0,nrAllNode):
-    # At i == j it's self (same node) dist = 0 package = null
-    for j in range(i+1,nrAllNode):
-        dist_node = np.sqrt((nodes[i].x-nodes[j].x)*(nodes[i].x-nodes[j].x)+(nodes[i].y-nodes[j].y)*(nodes[i].y-nodes[j].y))
-        #dist_mat[i][j] = dist_node
-        
-        for _ in range(7,13,1):
-            packageAtNode = myPacket(nodes[i].id, nodes[i].packetlen, dist_node, j,_)
-            pack_mat[_][i][j] = packageAtNode
-
-            if not packageAtNode.lost:
-                 nodes[i].reached[_].append(j)
-                 nodes[j].reached[_].append(i)
-        
-#Setup Phase
-print("Setup Phase")
-for sf in range(7,13):
-    for i in range(0,4):
-        for node in nodes:
-            node.SF = sf
-            if node.id == 0:
-                continue
-            Low = 999
-            for reach in node.GetReached():
-                reachLv = nodes[reach].GetSFLevel()
-                if  reachLv < Low:
-                    Low = reachLv
-            node.UpdateSFLevel(Low+1)
+    for i in range(0,nrAllNode):
+        # At i == j it's self (same node) dist = 0 package = null
+        for j in range(i+1,nrAllNode):
+            dist_node = np.sqrt((nodes[i].x-nodes[j].x)*(nodes[i].x-nodes[j].x)+(nodes[i].y-nodes[j].y)*(nodes[i].y-nodes[j].y))
+            #dist_mat[i][j] = dist_node
             
-#Neightbor Phase            
-for sf in range(7,13):
-    #for i in range(0,2):
-        for node in nodes:
-            node.SF = sf
-            for reach in node.GetReached():
-                reachNode = nodes[reach]
-                node.UpdateNeighbor(reachNode.id,reachNode.GetSFLevel())
-                reachNode.UpdateNeighbor(node.id,node.GetSFLevel())
+            for _ in range(7,13,1):
+                packageAtNode = myPacket(nodes[i].id, nodes[i].packetlen, dist_node, j,_)
+                pack_mat[_][i][j] = packageAtNode
+
+                if not packageAtNode.lost:
+                    nodes[i].reached[_].append(j)
+                    nodes[j].reached[_].append(i)
+
+#CreatePackage()
+
+#Setup Phase
+def SetupPhase():
+    print("Setup Phase")
+    for sf in range(7,13):
+        for i in range(0,4):
+            for node in nodes:
+                node.SF = sf
+                if node.id == 0:
+                    continue
+                Low = 999
+                for reach in node.GetReached():
+                    reachLv = nodes[reach].GetSFLevel()
+                    if  reachLv < Low:
+                        Low = reachLv
+                node.UpdateSFLevel(Low+1)
                 
-                                
+    #Neightbor Phase            
+    for sf in range(7,13):
+        #for i in range(0,2):
+            for node in nodes:
+                node.SF = sf
+                for reach in node.GetReached():
+                    reachNode = nodes[reach]
+                    node.UpdateNeighbor(reachNode.id,reachNode.GetSFLevel())
+                    reachNode.UpdateNeighbor(node.id,node.GetSFLevel())
+                
+#SetupPhase()      
+
 def NeighborScore(node1:myNode,node2:myNode):
     """ เทียบระหว่าง 2 node ว่ามี node ใกล้เคียง (Neighbor) 
     เหมือนกันอยู่เท่าไหร่
@@ -836,27 +763,32 @@ def FindNeighbor(node1:myNode,nodeCmp1:myNode,nodeCmp2:myNode):
 def ResetAllNodeSF():
     for node in nodes:
         node.ResetSF()
-ResetAllNodeSF()
 
+
+#ResetAllNodeSF()
+
+
+def FindParent():
 #Find Parent Phase
-for node in nodes:
-    # node 0 = gateway << No parent
-    if node.id == 0:
-        continue
-    for reach in node.GetnbLower():
-        if node.GetSFLevel() <= nodes[reach].GetSFLevel(): # ไม่ต้องมีก็ได้
+    for node in nodes:
+        # node 0 = gateway << No parent
+        if node.id == 0:
             continue
-        if node.parent == -1:
-            node.parent = nodes[reach].id
-            nodes[reach].child.append(node.id)
-            continue
-        oldScore = NeighborScore(node,nodes[node.parent])
-        newScore = NeighborScore(node,nodes[reach])
-        if newScore > oldScore:
-            nodes[node.parent].child.remove(node.id)
-            nodes[reach].child.append(node.id)
-            node.parent = reach
-            
+        for reach in node.GetnbLower():
+            if node.GetSFLevel() <= nodes[reach].GetSFLevel(): # ไม่ต้องมีก็ได้
+                continue
+            if node.parent == -1:
+                node.parent = nodes[reach].id
+                nodes[reach].child.append(node.id)
+                continue
+            oldScore = NeighborScore(node,nodes[node.parent])
+            newScore = NeighborScore(node,nodes[reach])
+            if newScore > oldScore:
+                nodes[node.parent].child.remove(node.id)
+                nodes[reach].child.append(node.id)
+                node.parent = reach
+
+#FindParent()         
         
 def GetHop(node:myNode):
     if len(node.child) == 0:
@@ -878,15 +810,17 @@ def GetTranmission(node:myNode):
         sum += node.HopCount
     return sum
 
+def ResetNode():
 # * Reset all node to SF7
-for node in nodes:
-    node.SF = 7
-    node.HopCount = GetHop(node)
+    for node in nodes:
+        node.SF = 7
+        node.HopCount = GetHop(node)
 
-for node in nodes:
-    node.Transmission = GetTranmission(node)
-    node.GetSlot()
+    for node in nodes:
+        node.Transmission = GetTranmission(node)
+        node.GetSlot()
 
+#ResetNode()
 
 def ChangeAllSF(node:myNode,SF):
     node.SF = SF
@@ -933,70 +867,29 @@ def MyProtocol2(node:myNode):
 
 #MyProtocol(nodes[0])
 
-#prepare show
-if (graphics == 1):
-    plt.xlim([0, xmax])
-    plt.ylim([0, ymax])
-    plt.draw()
-    plt.show()
+
 
 # store nodes and basestation locations
-with open('nodes.txt', 'w') as nfile:
-    for node in nodes:
-        nfile.write('{x} {y} {id}\n'.format(**vars(node)))
+# with open('nodes.txt', 'w') as nfile:
+#     for node in nodes:
+#         nfile.write('{x} {y} {id}\n'.format(**vars(node)))
 
-with open('basestation.txt', 'w') as bfile:
-    for basestation in bs:
-        bfile.write('{x} {y} {id}\n'.format(**vars(basestation)))
+# with open('basestation.txt', 'w') as bfile:
+#     for basestation in bs:
+#         bfile.write('{x} {y} {id}\n'.format(**vars(basestation)))
         
-# start simulation
-#env.run(until=simtime)
 
-# print stats and save into file
-# print "nrCollisions ", nrCollisions
-# print list of received packets
-#print recPackets
-# print ("nr received packets", len(recPackets))
-# print ("nr collided packets", len(collidedPackets))
-# print ("nr lost packets", len(lostPackets))
-
-
-# # this can be done to keep graphics visible
-# if (graphics == 1):
-#     sys.stdin.read()
-
-# plotting using plt.pyplot()
-
-# for j in range(7,8):
-#     for i in nodes:
-#         mark = 7 
-#         Line = "solid"
-#         if i.parent != -1:
-#             plt.plot([i.x,nodes[i.parent].x],[i.y,nodes[i.parent].y],color='r', marker='1', linestyle=Line,linewidth=1, markersize=1)
-#         if i.SFlevel[j] == 0:
-#             plt.plot(i.x,i.y,color='red', marker='o', linestyle='dashed',linewidth=1, markersize=10)
-#         elif i.SFlevel[j] == 1:
-#             plt.plot(i.x,i.y,color='green', marker='o', linestyle='dashed',linewidth=1, markersize=mark)
-#         elif i.SFlevel[j] == 2:
-#             plt.plot(i.x,i.y,color='blue', marker='o', linestyle='dashed',linewidth=1, markersize=mark)
-#         elif i.SFlevel[j] == 3:
-#             plt.plot(i.x,i.y,color='yellow', marker='o', linestyle='dashed',linewidth=1, markersize=mark)
-#         elif i.SFlevel[j] == 4:
-#             plt.plot(i.x,i.y,color='c', marker='o', linestyle='dashed',linewidth=1, markersize=mark)
-#         elif i.SFlevel[j] == 5:
-#             plt.plot(i.x,i.y,color='m', marker='o', linestyle='dashed',linewidth=1, markersize=mark)
-#         else:
-#             plt.plot(i.x,i.y,color='k', marker='o', linestyle='dashed',linewidth=1, markersize=mark)
-
-#     plt.title(f'SF {j} plot')
-
-            
-# plt.show()
 
 
 def showMap():
     if config.ShowMode:
         return
+    #prepare show
+    if (graphics == 1):
+        plt.xlim([0, xmax])
+        plt.ylim([0, ymax])
+        plt.draw()
+        plt.show()
     for i in nodes:
         mark = 7 
         Line = "solid"
@@ -1019,12 +912,23 @@ def showMap():
         plt.plot(i.x,i.y,color, marker='o', linestyle='dashed',linewidth=1, markersize=mark)    
 
     plt.show()
-    
-MaxBefore = sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 7)    
-SumList = [0]*13
-SumNode = [0]*13
-System_Result = ""
-GateWay_Result = ""
+
+
+
+def SetupResult():
+    global MaxBefore
+    global SumList
+    global SumNode
+    global System_Result
+    global GateWay_Result
+    MaxBefore = sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 7)    
+    SumList = [0]*13
+    SumNode = [0]*13
+    System_Result = ""
+    GateWay_Result = ""
+
+#SetupResult()
+
 def PrintSF():
     global SumList
     global System_Result
@@ -1039,7 +943,7 @@ def PrintSF():
     SumList[12]= sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 12)
     for i in range(7,13):
         Sum = f"Sum SF{i} = {SumList[i]} "
-        System_Result += f"{Sum:<6}"
+        System_Result += f"{SumList[i]:<6}"
         print(Sum,end="")
     AirTime = [0]*13
     AirTime[7] = SumList[7]
@@ -1051,17 +955,19 @@ def PrintSF():
     PercentResult = f"{100*max(AirTime)/MaxBefore:.4f}"
     Sum = f"% = {PercentResult} System = {sum(SumList)}"
     print(Sum)
-    System_Result += f"{PercentResult:<6}"
+    System_Result += f"{PercentResult:<6}\n"
 
-PrintSF()
-showMap()
+#PrintSF()
+#showMap()
 
+def ProtocolChoose():
+    if config.ProtocolMode == 1:
+        for i in nodes[0].child:
+            MyProtocol(nodes[i]) 
+    elif config.ProtocolMode == 2:
+        MyProtocol(nodes[0]) 
 
-if config.ProtocolMode == 1:
-    for i in nodes[0].child:
-        MyProtocol(nodes[i]) 
-elif config.ProtocolMode == 2:
-    MyProtocol(nodes[0]) 
+#ProtocolChoose()
 
 for node in nodes:
     node.HopCount = GetHop(node)
@@ -1069,9 +975,7 @@ for node in nodes:
 for node in nodes:
     node.Transmission = GetTranmission(node)
     #node.GetSlot()
-print("Protocol 1")
-PrintSF()
-showMap()
+
 
 def RunProtocol2():
     for x in range(1,100):
@@ -1099,7 +1003,7 @@ def RunProtocol2():
             if tempSumList[7] == SumList[7]:
                 break
 
-RunProtocol2()
+
 
 def SumEachSF():
     print("Sum Node in system")
@@ -1123,7 +1027,32 @@ def SumEachSF():
     AirTime[12] = SumNode[12]*32
     
     print(f"% = {100*max(AirTime)/len(nodes):.4f} Before = {len(nodes)}")
-SumEachSF()
+
+def TestProcess():
+    CreateLogFile()
+    CreateNodePara()
+    CreateLocationPara()
+    genNode()
+    CreatePackage()
+    SetupPhase() 
+    ResetAllNodeSF()
+    FindParent() 
+    ResetNode()
+    SetupResult()
+    PrintSF()
+    showMap()
+    ProtocolChoose()
+    print("Protocol 1")
+    PrintSF()
+    showMap()
+    RunProtocol2()
+    SumEachSF()
+    SaveResult(System_Result)
+
+config.DistMode = 0 # Default = 4
+config.NodeMode = 0 # Default = 0
+config.PtxMode = 4 # Default = 4
+TestProcess()
 
 exit(0)
 

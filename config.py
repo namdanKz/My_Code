@@ -51,17 +51,14 @@ PathLossMode = 0 # 0 = free spave , 1 = dortmund
 # width of area of the experiment
 maxDist = Dist_Setting[DistMode]#10_000
 part_config = Node_Setting[NodeMode] # block number for node 15 = 15*15 =225 node
-
-
+Ptx = Ptx_Setting[PtxMode] 
 
 
 pktLen = 25
-
-Ptx = Ptx_Setting[PtxMode] 
-gamma = 2.65 #2.08 free space #2.65 dortmund
+gamma = 2.08 #2.08 free space #2.65 dortmund
 d0 = 1000 #40.0
 var = 0           # variance ignored for now
-Lpld0 = 132.25 #127.41 free space  #132.25 dortmund
+Lpld0 = 127.41 #127.41 free space  #132.25 dortmund
 GL = 0
 
 
