@@ -81,12 +81,14 @@ def CreateLogFile():
     config.Ptx = config.Ptx_Setting[config.PtxMode] 
     Test_Setting = f"{config.maxDist}_{config.part_config}_{config.Ptx}"
     TestFileName = f"TestResult{Test_Setting}.csv"
+    TestHeader = "{:<6}{:<6}{:<6}{:<6}{:<6}{:<6}{:<10}".format("SF7","SF8","SF9","SF10","SF11","SF12","%")
 
-    TestHeader = "{:<8}{:<6}{:<6}{:<6}{:<6}{:<6}{:<6}{:<6}\n".format("Type","SF7","SF8","SF9","SF10","SF11","SF12","%")
+    TestHeader = TestHeader+TestHeader+"\n"
     #Check file
     if not os.path.exists(TestFileName):
         with open(TestFileName, "a") as myfile:
             myfile.write(f"Condition = {Test_Setting}\n")
+            myfile.write("{:<46}GateWay\n".format("System"))
             myfile.write(TestHeader)
         myfile.close()
 
@@ -932,7 +934,7 @@ def SetupResult():
 def PrintSF():
     global SumList
     global System_Result
-    System_Result = "{:<8}".format("Sysmtem")
+    System_Result = ""
     SumList = [0]*13
     #SumList[7]= sum(1 for i in nodes if i.id != 0 and i.SF == 7)
     SumList[7]= sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 7)
@@ -955,7 +957,7 @@ def PrintSF():
     PercentResult = f"{100*max(AirTime)/MaxBefore:.4f}"
     Sum = f"% = {PercentResult} System = {sum(SumList)}"
     print(Sum)
-    System_Result += f"{PercentResult:<6}\n"
+    System_Result += f"{PercentResult:<10}"
 
 #PrintSF()
 #showMap()
@@ -1008,16 +1010,18 @@ def RunProtocol2():
 def SumEachSF():
     print("Sum Node in system")
     global SumNode
+    global System_Result
     SumNode = [0]*13
     #SumList[7]= sum(1 for i in nodes if i.id != 0 and i.SF == 7)
-    SumNode[7]= sum(1 for i in nodes[0].child if nodes[i].SF == 7)
-    SumNode[8]= sum(1 for i in nodes[0].child if nodes[i].SF == 8)
-    SumNode[9]= sum(1 for i in nodes[0].child if nodes[i].SF == 9)
-    SumNode[10]= sum(1 for i in nodes[0].child if nodes[i].SF == 10)
-    SumNode[11]= sum(1 for i in nodes[0].child if nodes[i].SF == 11)
-    SumNode[12]= sum(1 for i in nodes[0].child if nodes[i].SF == 12)
+    SumNode[7]= sum(1 for i in nodes if i.SF == 7 and i.id != 0)
+    SumNode[8]= sum(1 for i in nodes if i.SF == 8 and i.id != 0)
+    SumNode[9]= sum(1 for i in nodes if i.SF == 9 and i.id != 0)
+    SumNode[10]= sum(1 for i in nodes if i.SF == 10 and i.id != 0)
+    SumNode[11]= sum(1 for i in nodes if i.SF == 11 and i.id != 0)
+    SumNode[12]= sum(1 for i in nodes if i.SF == 12 and i.id != 0)
     for i in range(7,13):
         print(f"Sum SF{i} = {SumNode[i]} ",end="")
+        System_Result += f"{SumNode[i]:<6}"
     AirTime = [0]*13
     AirTime[7] = SumNode[7]
     AirTime[8] = SumNode[8]*2
@@ -1025,8 +1029,9 @@ def SumEachSF():
     AirTime[10] = SumNode[10]*8
     AirTime[11] = SumNode[11]*16
     AirTime[12] = SumNode[12]*32
-    
-    print(f"% = {100*max(AirTime)/len(nodes):.4f} Before = {len(nodes)}")
+    PercentResult = f"{100*max(AirTime)/len(nodes):.4f}"
+    print(f"% = {PercentResult} Before = {len(nodes)}")
+    System_Result += f"{PercentResult:<10}\n"
 
 def TestProcess():
     CreateLogFile()
@@ -1052,7 +1057,8 @@ def TestProcess():
 config.DistMode = 0 # Default = 4
 config.NodeMode = 0 # Default = 0
 config.PtxMode = 4 # Default = 4
-TestProcess()
+for i in range(1):
+    TestProcess()
 
 exit(0)
 
