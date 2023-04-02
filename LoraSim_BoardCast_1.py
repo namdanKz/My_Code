@@ -1054,11 +1054,20 @@ def TestProcess():
     SumEachSF()
     SaveResult(System_Result)
 
-config.DistMode = 0 # Default = 4
-config.NodeMode = 0 # Default = 0
-config.PtxMode = 4 # Default = 4
-for i in range(1):
-    TestProcess()
+def RunTest(round):
+    config.DistMode = 0 # Default = 4
+    config.NodeMode = 0 # Default = 0
+    config.PtxMode = 4 # Default = 4
+    for i in range(5):
+        for j in range(5):
+            for k in range(5):
+                config.DistMode = i # Default = 4
+                config.NodeMode = j # Default = 0
+                config.PtxMode = k # Default = 4
+                for x in range(round):
+                    TestProcess()
+
+RunTest(10)
 
 exit(0)
 
