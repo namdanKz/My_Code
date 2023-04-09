@@ -80,15 +80,15 @@ def CreateLogFile():
     config.part_config = config.Node_Setting[config.NodeMode] # block number for node 15 = 15*15 =225 node
     config.Ptx = config.Ptx_Setting[config.PtxMode] 
     Test_Setting = f"{config.maxDist}_{config.part_config}_{config.Ptx}"
-    TestFileName = f"TestResult{Test_Setting}.csv"
-    TestHeader = "{:<6}{:<6}{:<6}{:<6}{:<6}{:<6}{:<10}".format("SF7","SF8","SF9","SF10","SF11","SF12","%")
+    TestFileName = f"TestResult_AirTime_{Test_Setting}.csv"
+    TestHeader = "{:<6}{:<6}{:<6}{:<6}{:<6}{:<6}{:<6}{:<10}".format("SF7_0","SF7","SF8","SF9","SF10","SF11","SF12","%")
 
     TestHeader = TestHeader+TestHeader+"\n"
     #Check file
     if not os.path.exists(TestFileName):
         with open(TestFileName, "a") as myfile:
             myfile.write(f"Condition = {Test_Setting}\n")
-            myfile.write("{:<46}GateWay\n".format("System"))
+            myfile.write("{:<52}GateWay\n".format("System"))
             myfile.write(TestHeader)
         myfile.close()
 
@@ -511,6 +511,8 @@ SumList = [0]*13
 SumNode = [0]*13
 System_Result = ""
 GateWay_Result = ""
+
+System_Result_First = 0
 
 # * new
 def CreateNodePara():
@@ -943,10 +945,7 @@ def PrintSF():
     SumList[10]= sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 10)
     SumList[11]= sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 11)
     SumList[12]= sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 12)
-    for i in range(7,13):
-        Sum = f"Sum SF{i} = {SumList[i]} "
-        System_Result += f"{SumList[i]:<6}"
-        print(Sum,end="")
+
     AirTime = [0]*13
     AirTime[7] = SumList[7]
     AirTime[8] = SumList[8]*2
@@ -954,6 +953,12 @@ def PrintSF():
     AirTime[10] = SumList[10]*8
     AirTime[11] = SumList[11]*16
     AirTime[12] = SumList[12]*32
+    System_Result += f"{System_Result_First:<6}"
+    for i in range(7,13):
+        Sum = f"Sum SF{i} = {SumList[i]} "
+        System_Result += f"{AirTime[i]:<6}"
+        print(Sum,end="")
+
     PercentResult = f"{100*max(AirTime)/MaxBefore:.4f}"
     Sum = f"% = {PercentResult} System = {sum(SumList)}"
     print(Sum)
@@ -963,20 +968,27 @@ def PrintSF():
 #showMap()
 
 def ProtocolChoose():
+    global System_Result_First
     if config.ProtocolMode == 1:
         for i in nodes[0].child:
             MyProtocol(nodes[i]) 
     elif config.ProtocolMode == 2:
         MyProtocol(nodes[0]) 
+    for node in nodes:
+        node.HopCount = GetHop(node)
+    for node in nodes:
+        node.Transmission = GetTranmission(node)
+    System_Result_First = sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 7)
 
 #ProtocolChoose()
 
-for node in nodes:
-    node.HopCount = GetHop(node)
+def node_prepare2():
+    for node in nodes:
+        node.HopCount = GetHop(node)
 
-for node in nodes:
-    node.Transmission = GetTranmission(node)
-    #node.GetSlot()
+    for node in nodes:
+        node.Transmission = GetTranmission(node)
+        #node.GetSlot()
 
 
 def RunProtocol2():
@@ -1011,6 +1023,7 @@ def SumEachSF():
     print("Sum Node in system")
     global SumNode
     global System_Result
+    global nrNodes
     SumNode = [0]*13
     #SumList[7]= sum(1 for i in nodes if i.id != 0 and i.SF == 7)
     SumNode[7]= sum(1 for i in nodes if i.SF == 7 and i.id != 0)
@@ -1019,9 +1032,7 @@ def SumEachSF():
     SumNode[10]= sum(1 for i in nodes if i.SF == 10 and i.id != 0)
     SumNode[11]= sum(1 for i in nodes if i.SF == 11 and i.id != 0)
     SumNode[12]= sum(1 for i in nodes if i.SF == 12 and i.id != 0)
-    for i in range(7,13):
-        print(f"Sum SF{i} = {SumNode[i]} ",end="")
-        System_Result += f"{SumNode[i]:<6}"
+
     AirTime = [0]*13
     AirTime[7] = SumNode[7]
     AirTime[8] = SumNode[8]*2
@@ -1029,8 +1040,13 @@ def SumEachSF():
     AirTime[10] = SumNode[10]*8
     AirTime[11] = SumNode[11]*16
     AirTime[12] = SumNode[12]*32
-    PercentResult = f"{100*max(AirTime)/len(nodes):.4f}"
+    System_Result += f"{nrNodes:<6}"
+    for i in range(7,13):
+        print(f"Sum SF{i} = {SumNode[i]} ",end="")
+        System_Result += f"{AirTime[i]:<6}"
+    PercentResult = f"{100*max(AirTime)/nrNodes:.4f}"
     print(f"% = {PercentResult} Before = {len(nodes)}")
+
     System_Result += f"{PercentResult:<10}\n"
 
 def TestProcess():
@@ -1050,17 +1066,16 @@ def TestProcess():
     print("Protocol 1")
     PrintSF()
     showMap()
+    
     RunProtocol2()
     SumEachSF()
     SaveResult(System_Result)
 
 def RunTest(round):
-    config.DistMode = 0 # Default = 4
-    config.NodeMode = 0 # Default = 0
-    config.PtxMode = 4 # Default = 4
-    for i in range(5):
-        for j in range(5):
-            for k in range(5):
+    condition = [0,4]
+    for i in condition:
+        for j in condition:
+            for k in condition:
                 config.DistMode = i # Default = 4
                 config.NodeMode = j # Default = 0
                 config.PtxMode = k # Default = 4
