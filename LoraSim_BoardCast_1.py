@@ -80,15 +80,15 @@ def CreateLogFile():
     config.part_config = config.Node_Setting[config.NodeMode] # block number for node 15 = 15*15 =225 node
     config.Ptx = config.Ptx_Setting[config.PtxMode] 
     Test_Setting = f"{config.maxDist}_{config.part_config}_{config.Ptx}"
-    TestFileName = f"TestResult_AirTime_{Test_Setting}.csv"
-    TestHeader = "{:<6}{:<6}{:<6}{:<6}{:<6}{:<6}{:<6}{:<10}".format("SF7_0","SF7","SF8","SF9","SF10","SF11","SF12","%")
+    TestFileName = f"YAirTime_01-{Test_Setting}.csv"
+    TestHeader = "{:<8}{:<8}{:<8}{:<8}{:<8}{:<8}{:<8}{:<10}".format("SF7_0","SF7","SF8","SF9","SF10","SF11","SF12","%")
 
     TestHeader = TestHeader+TestHeader+"\n"
     #Check file
     if not os.path.exists(TestFileName):
         with open(TestFileName, "a") as myfile:
             myfile.write(f"Condition = {Test_Setting}\n")
-            myfile.write("{:<52}GateWay\n".format("System"))
+            myfile.write("{:<66}GateWay\n".format("System"))
             myfile.write(TestHeader)
         myfile.close()
 
@@ -506,7 +506,7 @@ listLocation = []
 cols = nrAllNode
 rows = nrAllNode
 
-MaxBefore = 0    
+InitialSF7 = 0    
 SumList = [0]*13
 SumNode = [0]*13
 System_Result = ""
@@ -851,9 +851,11 @@ def MyProtocol(node:myNode):
 def MyProtocol2(node:myNode):
     for ch in node.child:
         childNode = nodes[ch]
-        for sf in range(node.SF,13):
+        for sf in range(node.SF+1,13):
             if childNode.Transmission <= node.SFSlot[sf]:
                 for nb in childNode.nbLower[sf]:
+                    if nb == node.id: # Parent...
+                        continue
                     childNode2 = nodes[nb]
                     if childNode2.SF == sf:
                     #if childNode2.SF == sf and childNode2.SFSlot[sf] >= childNode.Transmission:
@@ -920,12 +922,12 @@ def showMap():
 
 
 def SetupResult():
-    global MaxBefore
+    global InitialSF7
     global SumList
     global SumNode
     global System_Result
     global GateWay_Result
-    MaxBefore = sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 7)    
+    InitialSF7 = sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 7)*config.PkgTime[7]    
     SumList = [0]*13
     SumNode = [0]*13
     System_Result = ""
@@ -947,19 +949,15 @@ def PrintSF():
     SumList[12]= sum(nodes[i].Transmission for i in nodes[0].child if nodes[i].SF == 12)
 
     AirTime = [0]*13
-    AirTime[7] = SumList[7]
-    AirTime[8] = SumList[8]*2
-    AirTime[9] = SumList[9]*4
-    AirTime[10] = SumList[10]*8
-    AirTime[11] = SumList[11]*16
-    AirTime[12] = SumList[12]*32
-    System_Result += f"{System_Result_First:<6}"
+    for i in range(7,13):
+        AirTime[i] = SumList[i]*config.PkgTime[i]
+    System_Result += f"{InitialSF7:<8}"
     for i in range(7,13):
         Sum = f"Sum SF{i} = {SumList[i]} "
-        System_Result += f"{AirTime[i]:<6}"
+        System_Result += f"{AirTime[i]:<8}"
         print(Sum,end="")
 
-    PercentResult = f"{100*max(AirTime)/MaxBefore:.4f}"
+    PercentResult = f"{100*max(AirTime)/InitialSF7:.4f}"
     Sum = f"% = {PercentResult} System = {sum(SumList)}"
     print(Sum)
     System_Result += f"{PercentResult:<10}"
@@ -1034,17 +1032,14 @@ def SumEachSF():
     SumNode[12]= sum(1 for i in nodes if i.SF == 12 and i.id != 0)
 
     AirTime = [0]*13
-    AirTime[7] = SumNode[7]
-    AirTime[8] = SumNode[8]*2
-    AirTime[9] = SumNode[9]*4
-    AirTime[10] = SumNode[10]*8
-    AirTime[11] = SumNode[11]*16
-    AirTime[12] = SumNode[12]*32
-    System_Result += f"{nrNodes:<6}"
+    for i in range(7,13):
+        AirTime[i] = SumNode[i]*config.PkgTime[i]
+
+    System_Result += f"{nrNodes:<8}"
     for i in range(7,13):
         print(f"Sum SF{i} = {SumNode[i]} ",end="")
-        System_Result += f"{AirTime[i]:<6}"
-    PercentResult = f"{100*max(AirTime)/nrNodes:.4f}"
+        System_Result += f"{AirTime[i]:<8}"
+    PercentResult = f"{100*max(AirTime)/(nrNodes*config.PkgTime[7]):.4f}"
     print(f"% = {PercentResult} Before = {len(nodes)}")
 
     System_Result += f"{PercentResult:<10}\n"
@@ -1072,18 +1067,30 @@ def TestProcess():
     SaveResult(System_Result)
 
 def RunTest(round):
-    condition = [0,4]
+    condition = range(0,1)
     for i in condition:
-        for j in condition:
-            for k in condition:
-                config.DistMode = i # Default = 4
-                config.NodeMode = j # Default = 0
-                config.PtxMode = k # Default = 4
-                for x in range(round):
-                    TestProcess()
+        config.DistMode = i # Default = 4
+        config.NodeMode = 0 # Default = 0
+        config.PtxMode = 0 # Default = 4
+        for x in range(round):
+            continue
+            TestProcess()
+    for j in condition:
+        config.DistMode = 0 # Default = 4
+        config.NodeMode = j # Default = 0
+        config.PtxMode = 4 # Default = 4
+        for x in range(round):
+            #continue
+            TestProcess()
+    for k in condition:
+        config.DistMode = 0 # Default = 4
+        config.NodeMode = 0 # Default = 0
+        config.PtxMode = k # Default = 4
+        for x in range(round):
+            continue
+            TestProcess()
 
 RunTest(10)
-
 exit(0)
 
 

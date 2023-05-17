@@ -26,6 +26,15 @@ sf12 = np.array([12,-133.25,-132.25,-132.25])
 # sf12 = np.array([12,-136,-133,-130])
 
 sensi = np.array([sf7,sf8,sf9,sf10,sf11,sf12])
+PkgTime = [0]*13
+PkgTime[7] = 36
+PkgTime[8] = 64
+PkgTime[9] = 113
+PkgTime[10] = 204
+PkgTime[11] = 372
+PkgTime[12] = 682
+
+
 
 DistMode = 4 # Default = 4
 NodeMode = 0 # Default = 0
@@ -44,7 +53,7 @@ bw_config = 125
 
 
 ProtocolMode = 1
-ShowMode = 1 # 0 = Show , 1 = Not Show
+ShowMode = 0 # 0 = Show , 1 = Not Show
 PathLossMode = 0 # 0 = free spave , 1 = dortmund
 
 
